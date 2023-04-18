@@ -251,6 +251,30 @@ class TrussBridge(object):
         return classification, instance
 
 
+    def label_nodes(self, distance) -> np.ndarray:
+        '''
+        Method to label the points by their distance to the nodes.
+        '''
+        
+
+        xyz = np.asarray(self.point_cloud().points)
+                    
+        classification = np.zeros((len(xyz)), dtype='int')
+        instance = np.zeros((len(xyz)), dtype='int')
+
+        idx = 0
+        for node in self.node_coordinates:
+
+                idx += 1
+
+                idx_node = np.linalg.norm(xyz - node, axis=1) < distance
+
+                classification[idx_node] = 1
+                instance[idx_node] = idx
+
+        return classification, instance
+
+
     def hidden_point_removal(self, cameras:np.ndarray, radii:np.ndarray) -> np.ndarray:
         '''
         TODO:seguir aquí.
@@ -266,7 +290,7 @@ class TrussBridge(object):
         return indexes
 
 
-    def save_las(self, path: str, version:float = 1.4, point_format:int = 6, scale=0.01, indexes = None):
+    def save_las(self, path: str, version:float = 1.4, point_format:int = 6, scale=0.01, indexes : list = None, distance_nodes : float = None):
         """"
         Function to save to the point cloud as LAS or LAZ.
         User_data field containd the unique id of each beam
@@ -277,9 +301,14 @@ class TrussBridge(object):
         :param point_format: point format of the LAS. 6 by default.
         :param scale: scale of LAS. 0.01 by default.
         :param indexes: selected indexes to be save. All by default.
+        :param distance_nodes: if specified, those points closer to a node than this parameters are labeled with 1.
         """
 
-        classification, instance = self.get_class_and_ins()
+        if not isinstance(distance_nodes,type(None)):
+            classification, instance = self.label_nodes(distance_nodes)
+
+        else:    
+            classification, instance = self.get_class_and_ins()
 
         # Locations
         location = np.asarray(self.point_cloud().points)

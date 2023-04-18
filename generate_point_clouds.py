@@ -48,6 +48,7 @@ PITCH=np.arctan(20/100)
 ROLL=np.arctan(5/100)
 SEED = 100
 N_DIGITS = len(str(N_POINT_CLOUDS))
+DISTANCE_NODES = 0.2
 
 path_out = pathlib.Path(path_out)
 random.seed(a=SEED)
@@ -104,7 +105,7 @@ for i in range(N_POINT_CLOUDS):
     parallels_top = [random.choice(profiles_parallel), random.randint(0,4)*(np.pi/2), 2] if random.random() < 0.7 and deck_position!=height else None
     diagonals_inner = [random.choice(profiles_inner), random.randint(0,4)*(np.pi/2), 3] if random.random() < 0.7 and deck_position>1 else None
 
-    my_bridge = BaileyTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
+    my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
                             diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
                             diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
                             diagonal_top=diagonals_top, parallel_top=parallels_top,
@@ -126,4 +127,4 @@ for i in range(N_POINT_CLOUDS):
 
     file_path = path_out.joinpath(file_name)
 
-    my_bridge.save_las(path=file_path, scale=DECIMALS)
+    my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)
