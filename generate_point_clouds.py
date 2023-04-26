@@ -115,8 +115,14 @@ for i in range(N_POINT_CLOUDS):
                             density=DENSITY
                             )
 
-    # oclusions
-    mesh = my_bridge.occlusions(camera = 0)
+    # positions of the lidar
+    cameras=np.zeros(3, dtype='object')
+    cameras[0] = {'fov_deg': 60, 'center':[0,0,0], 'eye':[0,0,5], 'up':[0,1,0], 'width_px':200, 'height_px':200}
+    cameras[1] = {'fov_deg': 60, 'center':[0,0,0], 'eye':[5,0,0], 'up':[0,1,0], 'width_px':200, 'height_px':200}
+    cameras[2] = {'fov_deg': 120, 'center':[0,0,0], 'eye':[0,10,0], 'up':[0,0,1], 'width_px':300, 'height_px':300}
+
+    my_bridge.point_cloud_from_positions(cameras)
+    my_bridge.show_pc()
 
     # Visualization
     # mesh = my_bridge.mesh()
@@ -131,4 +137,4 @@ for i in range(N_POINT_CLOUDS):
 
     file_path = path_out.joinpath(file_name)
 
-    my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)
+    my_bridge.save_las(path=file_path, scale=DECIMALS)

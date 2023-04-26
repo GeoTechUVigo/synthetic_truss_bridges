@@ -391,7 +391,7 @@ class TrussBridge(object):
         inst = np.unique(instances)
         colours_group = np.random.rand(len(inst),3)
         for i in inst:
-            colours[instances==i,:] = colours_group[i]
+            colours[instances==i,:] = colours_group[inst==i][0]
 
         pcd_ins.colors = o3d.utility.Vector3dVector(colours)
 
@@ -401,29 +401,57 @@ class TrussBridge(object):
         o3d.visualization.draw([pcd_ins, pcd_sem, line])
 
 
-    def occlusions(self, camera):
+    def point_cloud_from_positions(self, cameras):
         '''
-        Method for 
+        Method for generating a point cloud from the mesh by specifing the parameters of the LiDAR as it is a camera.
+
+        :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px'].
         '''
 
         # create scene        
         scene = o3d.t.geometry.RaycastingScene()
-        scene.add_triangles(o3d.t.geometry.TriangleMesh.from_legacy(self.mesh()))
 
-        # create rays
-        rays = scene.create_rays_pinhole(fov_deg=30,
-                                 center=[0,0,0],
-                                 eye=[0,0,5],
-                                 up=[0,1,0],
-                                 width_px=200,
-                                 height_px=200)
-        ans = scene.cast_rays(rays)
+        # Add each member
+        scene.add_triangles(o3d.t.geometry.TriangleMesh.from_legacy(self.deck.mesh)) # member 0 is the deck
+        for element in self.beam:
+            scene.add_triangles(o3d.t.geometry.TriangleMesh.from_legacy(element.mesh))
 
-        # collision points
-        hit = ans['t_hit'].isfinite()
-        points = rays[hit][:,:3] + rays[hit][:,3:]*ans['t_hit'][hit].reshape((-1,1))
+        points_total = np.zeros((0,3))
+        idx_member_total = np.zeros((0), dtype='int')
 
-        # idx of the triangle of each point
-        idx_triangles = ans['primitive_ids'][hit].numpy()
+        for camera in cameras:
+            # create rays
+            rays = scene.create_rays_pinhole(fov_deg=camera['fov_deg'],
+                                    center=camera['center'],
+                                    eye=camera['eye'],
+                                    up=camera['up'],
+                                    width_px=camera['width_px'],
+                                    height_px=camera['height_px'])
+            ans = scene.cast_rays(rays)
 
-        return points, idx_triangles
+            # collision
+            hit = ans['t_hit'].isfinite()
+
+            # points
+            points = (rays[hit][:,:3] + rays[hit][:,3:]*ans['t_hit'][hit].reshape((-1,1))).numpy()
+
+            # idx of the member of each point
+            idx_member = ans['geometry_ids'][hit].numpy()
+
+            # Add
+            points_total = np.concatenate((points_total, points))
+            idx_member_total = np.concatenate((idx_member_total, idx_member))
+
+        unique_idxs = np.unique(idx_member_total)
+
+        for idx in range(len(self.beam)+1):
+            
+            pcd = o3d.geometry.PointCloud()
+            if np.any(np.in1d(unique_idxs, idx)):
+                pcd.points = o3d.cuda.pybind.utility.Vector3dVector(points_total[idx_member_total == idx])
+
+            # idx 0 is the deck.
+            if idx == 0:
+                self.deck.point_cloud = pcd
+            else:
+                self.beam[idx-1].point_cloud = pcd      
