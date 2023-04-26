@@ -462,4 +462,4 @@ class TrussBridge(object):
             if idx == 0:
                 self.deck.point_cloud = pcd
             else:
-                self.beam[idx-1].point_cloud = pcd      
+                self.beam[idx-1].point_cloud = pcd

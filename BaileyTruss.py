@@ -50,7 +50,7 @@ class BaileyTruss(TrussBridge):
         :param parallel_top: [string, doulbe, uint] profile of top parallel beams,its orientation and the class number.
         :param diagonal_inner: [string, doulbe, uint] profile of inner diagonal beams,its orientation and the class number.
         :param density: density of the point cloud (points/m²).
-        :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px'].
+        :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px']. Consider the point centre in (0,0,0)
         """
 
         #############################################################################################

@@ -111,16 +111,17 @@ for i in range(N_POINT_CLOUDS):
     diagonals_inner = [random.choice(profiles_inner), random.randint(0,4)*(np.pi/2), 3] if random.random() < 0.7 and deck_position>1 else None
     
     #=================================================================================================================================================
-    # Positions of the LIDAR
+    # Positions of the LIDAR. their are calcualted consider the point centre in (0,0,0)
     # Deck. 4 cameras_deck por position to do 360.
     n_deck_cameras = random.randint(CAMARA_DECK[0], CAMARA_DECK[1])
+    n_deck_cameras=1
     # Initialising
     cameras_deck = np.zeros(n_deck_cameras*4, dtype='object')
     rot90 = o3d.geometry.get_rotation_matrix_from_zyx((np.pi/2, 0.0, 0.0))
     offset = np.asarray([0,0,1]) # Upper the deck
     for i in range(n_deck_cameras):
         # Spacing the positions
-        position = np.asarray([(i+1)/(n_deck_cameras+1)*length*n_drawers,0,deck_position+1])
+        position = np.asarray([-length*n_drawers/2 + (i+1)/(n_deck_cameras+1)* length*n_drawers,0,-height/2+deck_position+1])
 
         # pointing point_0 and pint_1 of the deck
         cameras_deck[i*4] = {'fov_deg': 90, 'center':position + [1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
@@ -130,7 +131,7 @@ for i in range(N_POINT_CLOUDS):
         # centre_0 = np.matmul(my_bridge.deck.point_0-position, rot90) + position + offset
         # centre_1 = np.matmul(my_bridge.deck.point_1-position, rot90) + position + offset
         cameras_deck[i*4+2] = {'fov_deg': 90, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
-        cameras_deck[i*4+3] = {'fov_deg': 90, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
+        cameras_deck[i*4+3] = {'fov_deg': 90, 'center':position + [0,-1,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
 
     cameras = cameras_deck
 
@@ -141,7 +142,7 @@ for i in range(N_POINT_CLOUDS):
                             diagonal_top=diagonals_top, parallel_top=parallels_top,
                             diagonal_inner=diagonals_inner,
                             centre=centre, orientation=orientation,
-                            density=DENSITY, cameras=None
+                            density=DENSITY, cameras=cameras
                             )
 
     my_bridge.show_pc()
