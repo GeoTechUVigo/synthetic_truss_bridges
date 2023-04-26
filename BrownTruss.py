@@ -24,7 +24,7 @@ class BrownTruss(TrussBridge):
     def __init__(self, n_drawers:int, height:float, length:float, width:float, h_deck:float, centre=[0,0,0], orientation=[0,0,0],
                  chord:list = None, diagonal_vert:list = None, parallel_vert:list = None, diagonal_bottom:list = None, 
                  parallel_bottom:list = None, diagonal_top:list = None, parallel_top:list = None, diagonal_inner:list = None,
-                 density=None) -> TrussBridge:
+                 density=None, cameras=None) -> TrussBridge:
         """
         Class child of TrussBridge. 
         This constructor calculates the node_coordinates and the parametres of TrussBridge object based on the Brown Truss structure.
@@ -50,6 +50,7 @@ class BrownTruss(TrussBridge):
         :param parallel_top: [string, doulbe, uint] profile of top parallel beams,its orientation and the class number.
         :param diagonal_inner: [string, doulbe, uint] profile of inner diagonal beams,its orientation and the class number.
         :param density: density of the point cloud (points/m²).
+        :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px'].
         """
 
         #############################################################################################
@@ -281,4 +282,4 @@ class BrownTruss(TrussBridge):
         deck = [deck_points[0], deck_points[1], [width, h_deck[1]]]
 
         # TrussBridge constructor with the elements of BaileyTrusss
-        super().__init__(node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem, deck, centre, orientation, density)
+        super().__init__(node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem, deck, centre, orientation, density, cameras)

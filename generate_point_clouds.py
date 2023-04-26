@@ -50,6 +50,11 @@ SEED = 100
 N_DIGITS = len(str(N_POINT_CLOUDS))
 DISTANCE_NODES = 0.2
 
+# LIDAR POSITIONS
+CAMARA_DECK = [0,4]
+CAMARA_DOWN = [0,3]
+CAMARA_LAT = [0,4]
+
 path_out = pathlib.Path(path_out)
 random.seed(a=SEED)
 
@@ -78,9 +83,8 @@ profiles_inner = profiles_names[np.logical_and(np.in1d(profile_type, ['L']), pro
 for i in range(N_POINT_CLOUDS):
 
     # Centre and orientation
-    centre = [0,0,0]
-    # centre = [random.uniform(0,100), random.uniform(0,100), random.uniform(0,100)]
-    orientation = [random.uniform(-YAW,YAW), random.uniform(-PITCH,PITCH), random.uniform(-ROLL,ROLL)]
+    centre = np.asarray([random.uniform(0,100), random.uniform(0,100), random.uniform(0,100)])
+    orientation = np.asarray([random.uniform(-YAW,YAW), random.uniform(-PITCH,PITCH), random.uniform(-ROLL,ROLL)])
 
     # Dimensions
     n_drawers = random.randint(DRAWERS[0], DRAWERS[1])
@@ -105,23 +109,41 @@ for i in range(N_POINT_CLOUDS):
     diagonals_top = [random.choice(profiles_diagonals), random.randint(0,4)*(np.pi/2), 3] if random.random() < 0.7 and deck_position!=height else None
     parallels_top = [random.choice(profiles_parallel), random.randint(0,4)*(np.pi/2), 2] if random.random() < 0.7 and deck_position!=height else None
     diagonals_inner = [random.choice(profiles_inner), random.randint(0,4)*(np.pi/2), 3] if random.random() < 0.7 and deck_position>1 else None
+    
+    #=================================================================================================================================================
+    # Positions of the LIDAR
+    # Deck. 4 cameras_deck por position to do 360.
+    n_deck_cameras = random.randint(CAMARA_DECK[0], CAMARA_DECK[1])
+    # Initialising
+    cameras_deck = np.zeros(n_deck_cameras*4, dtype='object')
+    rot90 = o3d.geometry.get_rotation_matrix_from_zyx((np.pi/2, 0.0, 0.0))
+    offset = np.asarray([0,0,1]) # Upper the deck
+    for i in range(n_deck_cameras):
+        # Spacing the positions
+        position = np.asarray([(i+1)/(n_deck_cameras+1)*length*n_drawers,0,deck_position+1])
 
+        # pointing point_0 and pint_1 of the deck
+        cameras_deck[i*4] = {'fov_deg': 90, 'center':position + [1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
+        cameras_deck[i*4+1] = {'fov_deg': 90, 'center':position + [-1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
+
+        # rotate 90
+        # centre_0 = np.matmul(my_bridge.deck.point_0-position, rot90) + position + offset
+        # centre_1 = np.matmul(my_bridge.deck.point_1-position, rot90) + position + offset
+        cameras_deck[i*4+2] = {'fov_deg': 90, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
+        cameras_deck[i*4+3] = {'fov_deg': 90, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
+
+    cameras = cameras_deck
+
+    #=================================================================================================================================================
     my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
                             diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
                             diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
                             diagonal_top=diagonals_top, parallel_top=parallels_top,
                             diagonal_inner=diagonals_inner,
                             centre=centre, orientation=orientation,
-                            density=DENSITY
+                            density=DENSITY, cameras=None
                             )
 
-    # positions of the lidar
-    cameras=np.zeros(3, dtype='object')
-    cameras[0] = {'fov_deg': 60, 'center':[0,0,0], 'eye':[0,0,5], 'up':[0,1,0], 'width_px':200, 'height_px':200}
-    cameras[1] = {'fov_deg': 60, 'center':[0,0,0], 'eye':[5,0,0], 'up':[0,1,0], 'width_px':200, 'height_px':200}
-    cameras[2] = {'fov_deg': 120, 'center':[0,0,0], 'eye':[0,10,0], 'up':[0,0,1], 'width_px':300, 'height_px':300}
-
-    my_bridge.point_cloud_from_positions(cameras)
     my_bridge.show_pc()
 
     # Visualization

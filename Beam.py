@@ -24,7 +24,7 @@ from ProfileMesh import ProfileMesh
 class Beam(object):
 
 
-    def __init__(self, point_0, point_1, profile, orientation, density=None) -> object:
+    def __init__(self, point_0, point_1, profile, orientation) -> object:
         """
         Constructor of Beam class. Calculates the direction, length, centre, orientation and profile of a beam.
         Beam objects can have its mesh and point cloud using its specific functions.
@@ -33,9 +33,10 @@ class Beam(object):
         :param point_1: end point of the beam.
         :param profile: profile type of the beam.
         :param orientation: orientation of the beam.
-        :param density: density of the point cloud (points/m²).
         """
-        
+
+        #TODO: soamente se actualiza mesh despois do metodo place() en TrussBridge. O resto non e fiable. Unicamente o point_o e point_1 de DECK por outros motivos. Ver como resolver isto.
+                
         self.point_0 = np.asarray(point_0)
         self.point_1 = np.asarray(point_1)
 
@@ -48,8 +49,9 @@ class Beam(object):
         meshResult = self.__calculate_mesh()
         self.mesh = meshResult[0]
         self.rotM= meshResult[1]
-        self.area = self.__calculate_area()
-        self.point_cloud = self.__calculate_point_cloud(density)
+
+        # The point cloud is calculated using TrussBridge.point_cloud_from_positions()
+        self.point_cloud = None
 
     # Properties
     @property
@@ -256,13 +258,13 @@ class Beam(object):
         return T
 
 
-    def __calculate_point_cloud(self, density) -> o3d.geometry.PointCloud():
+    def calculate_point_cloud(self, density) -> o3d.geometry.PointCloud():
         """
-        Generates a point cloud. If the mesh is not already calculated it calculates it.
+        Generates a point cloud.
 
-        :param points: number of points of the point cloud.
+        :param density: density of the point cloud (points/m²).
         """
         if isinstance(density, type(None)):
             return None
         else:
-            return self.mesh.sample_points_uniformly(int(density*self.area))
+            return self.mesh.sample_points_uniformly(int(density*self.__calculate_area()))

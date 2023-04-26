@@ -18,7 +18,6 @@ import stat
 import open3d as o3d
 import numpy as np
 import laspy
-import copy
 
 from Beam import Beam
 
@@ -26,7 +25,7 @@ from Beam import Beam
 class TrussBridge(object):
 
 
-    def __init__(self, node_coordinates, nodes, profile, beam_orient, classification, deck, centre, orientation, density) -> object:
+    def __init__(self, node_coordinates, nodes, profile, beam_orient, classification, deck, centre, orientation, density, cameras) -> object:
         """
         Class for the generation of truss bridges. Each beam of the bridge is a Beam object.
 
@@ -40,6 +39,7 @@ class TrussBridge(object):
         :param centre: (3,) centre of the Truss.
         :param orientation: (3,) orientation of the Truss expresed as ZYX rotation angles.
         :param density: density of the point cloud (points/m²).
+        :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px'].
         """
     
         self.name = type(self).__name__
@@ -53,10 +53,11 @@ class TrussBridge(object):
         # Beam objects and deck are generated in centre=[0,0,0] and orientation=[0,0,0].
         # Then, they are place. It is done to avoid rotation problems.
         self.beam_setter()
-        self.deck = Beam(deck[0], deck[1], ["deck", deck[2][0], deck[2][1]], 0, density=self.density)
+        self.deck = Beam(deck[0], deck[1], ["deck", deck[2][0], deck[2][1]], 0)
 
         self.centre = centre
         self.orientation = orientation
+        self.point_cloud_from_positions(cameras)
         self.place(node_coordinates, deck)
 
     @property
@@ -134,7 +135,7 @@ class TrussBridge(object):
         beam = np.ones(len(self.nodes), dtype='object')
         for i in range(len(beam)):
             beam[i] = Beam(self.node_coordinates[self.nodes[i,0]], self.node_coordinates[self.nodes[i,1]], 
-                           self.profile[i], self.beam_orient[i], density=self.density)
+                           self.profile[i], self.beam_orient[i])
         
         self.beam = beam
 
@@ -404,10 +405,17 @@ class TrussBridge(object):
     def point_cloud_from_positions(self, cameras):
         '''
         Method for generating a point cloud from the mesh by specifing the parameters of the LiDAR as it is a camera.
+        If camera is None, the point cloud is generated with random points.
 
         :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px'].
         '''
 
+        if cameras is None:
+            for i in range(len(self.beam)):
+                self.beam[i].point_cloud  = self.beam[i].calculate_point_cloud(self.density)
+            self.deck.point_cloud = self.deck.calculate_point_cloud(self.density)
+            return
+        
         # create scene        
         scene = o3d.t.geometry.RaycastingScene()
 
