@@ -18,6 +18,7 @@ import stat
 import open3d as o3d
 import numpy as np
 import laspy
+import copy
 
 from Beam import Beam
 
@@ -275,21 +276,6 @@ class TrussBridge(object):
         return classification, instance
 
 
-    def hidden_point_removal(self, cameras:np.ndarray, radii:np.ndarray) -> np.ndarray:
-        '''
-        TODO:seguir aquí.
-        '''
-        indexes = np.array([],dtype='uint')
-        pcd = self.point_cloud()
-        for camera, radius in zip(cameras,radii):
-            _, pt_map = pcd.hidden_point_removal(camera, radius)
-            indexes = np.append(indexes, np.asarray(pt_map,dtype='uint'))
-
-        indexes = np.unique(indexes)
-
-        return indexes
-
-
     def save_las(self, path: str, version:float = 1.4, point_format:int = 6, scale=0.01, indexes : list = None, distance_nodes : float = None):
         """"
         Function to save to the point cloud as LAS or LAZ.
@@ -413,3 +399,31 @@ class TrussBridge(object):
         line= o3d.geometry.LineSet.create_from_triangle_mesh(self.mesh())
 
         o3d.visualization.draw([pcd_ins, pcd_sem, line])
+
+
+    def occlusions(self, camera):
+        '''
+        Method for 
+        '''
+
+        # create scene        
+        scene = o3d.t.geometry.RaycastingScene()
+        scene.add_triangles(o3d.t.geometry.TriangleMesh.from_legacy(self.mesh()))
+
+        # create rays
+        rays = scene.create_rays_pinhole(fov_deg=30,
+                                 center=[0,0,0],
+                                 eye=[0,0,5],
+                                 up=[0,1,0],
+                                 width_px=200,
+                                 height_px=200)
+        ans = scene.cast_rays(rays)
+
+        # collision points
+        hit = ans['t_hit'].isfinite()
+        points = rays[hit][:,:3] + rays[hit][:,3:]*ans['t_hit'][hit].reshape((-1,1))
+
+        # idx of the triangle of each point
+        idx_triangles = ans['primitive_ids'][hit].numpy()
+
+        return points, idx_triangles

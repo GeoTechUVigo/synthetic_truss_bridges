@@ -78,7 +78,8 @@ profiles_inner = profiles_names[np.logical_and(np.in1d(profile_type, ['L']), pro
 for i in range(N_POINT_CLOUDS):
 
     # Centre and orientation
-    centre = [random.uniform(0,100), random.uniform(0,100), random.uniform(0,100)]
+    centre = [0,0,0]
+    # centre = [random.uniform(0,100), random.uniform(0,100), random.uniform(0,100)]
     orientation = [random.uniform(-YAW,YAW), random.uniform(-PITCH,PITCH), random.uniform(-ROLL,ROLL)]
 
     # Dimensions
@@ -113,6 +114,9 @@ for i in range(N_POINT_CLOUDS):
                             centre=centre, orientation=orientation,
                             density=DENSITY
                             )
+
+    # oclusions
+    mesh = my_bridge.occlusions(camera = 0)
 
     # Visualization
     # mesh = my_bridge.mesh()
