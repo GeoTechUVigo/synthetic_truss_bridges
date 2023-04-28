@@ -21,7 +21,6 @@ in classfication attribute and instance segmentation in user data attribute.
 """
 # ============================================================================
 
-import random
 import numpy as np
 from BaileyTruss import BaileyTruss
 from BrownTruss import BrownTruss
@@ -33,30 +32,49 @@ import open3d as o3d
 
 # Parameters
 
-path_out = "synthetic_data"
-extension = ".las"
+PATH_OUT = "data/occlusions_and_nodes"
+FILE_TYPE = ".las"
 
+# TRUSS PARAMETERS
 N_POINT_CLOUDS = 100
 DRAWERS = [4,10]
 HEIGH = [3,5]
 LENGHT = [3,5]
 WIDTH = [2,5]
 DENSITY = 1000
-DECIMALS = 0.01
+
+# ORIENTATION
 YAW=np.pi
 PITCH=np.arctan(20/100)
 ROLL=np.arctan(5/100)
+
+# OTHER PARAMETERS
 SEED = 100
+DECIMALS = 0.01
 N_DIGITS = len(str(N_POINT_CLOUDS))
-DISTANCE_NODES = 0.2
+DISTANCE_NODES = 0.2 # Dist to node to classify that points as node
 
-# LIDAR POSITIONS
-CAMARA_DECK = [0,4]
-CAMARA_DOWN = [0,3]
-CAMARA_LAT = [0,4]
+# LILDAR
+# Angles
+LIDAR_STEP_DEG = 5
+LIDAR_ANGLE_DEG = 150
+LIDAR_ANGLE_DEG_DECK = 360
+# Number of scans by position of the LiDAR in the bridge
+N_CAMARA_DECK = [2,4]
+N_CAMARA_DOWN = [0,5]
+N_CAMARA_LAT = [0,5] # It is done in both sides
+MIN_CAM = 3
+# Positions
+CAM_DIST_DECK = [0.5, 1.5] # distance Z to the deck
+CAM_DIST_DOWN = [-3, -10] # distance Z to the down face.
+CAM_DIST_LAT_Y = [3, 10] # distance to the lateral face in Y. Both sides
+CAM_DIST_LAT_Z = [2, -10] # distance to the centre in Z
+SIGMA = [1.0, 0.2, 0] # Standar deviation in XYZ. Used in the dimensions in which there are not random choice
 
-path_out = pathlib.Path(path_out)
-random.seed(a=SEED)
+# ============================================================================
+np.random.seed(SEED)
+PATH_OUT = pathlib.Path(PATH_OUT)
+if not PATH_OUT.is_dir(): raise ValueError("PATH_OUT {} does not exist.".format(str(PATH_OUT)))
 
 # list profiles by type of beam
 profile_path = "standarized_profiles_formatted"
@@ -83,57 +101,117 @@ profiles_inner = profiles_names[np.logical_and(np.in1d(profile_type, ['L']), pro
 for i in range(N_POINT_CLOUDS):
 
     # Centre and orientation
-    centre = np.asarray([random.uniform(0,100), random.uniform(0,100), random.uniform(0,100)])
-    orientation = np.asarray([random.uniform(-YAW,YAW), random.uniform(-PITCH,PITCH), random.uniform(-ROLL,ROLL)])
+    centre = np.asarray([np.random.uniform(0,100), np.random.uniform(0,100), np.random.uniform(0,100)])
+    orientation = np.asarray([np.random.uniform(-YAW,YAW), np.random.uniform(-PITCH,PITCH), np.random.uniform(-ROLL,ROLL)])
 
     # Dimensions
-    n_drawers = random.randint(DRAWERS[0], DRAWERS[1])
-    height = random.random() * (HEIGH[1] - HEIGH[0]) + HEIGH[0]
-    length = random.random() * (LENGHT[1] - LENGHT[0]) + LENGHT[0]
-    width = random.random() * (WIDTH[1] - WIDTH[0]) + WIDTH[0]
+    n_drawers = np.random.randint(DRAWERS[0], DRAWERS[1])
+    height = np.random.random() * (HEIGH[1] - HEIGH[0]) + HEIGH[0]
+    length = np.random.random() * (LENGHT[1] - LENGHT[0]) + LENGHT[0]
+    width = np.random.random() * (WIDTH[1] - WIDTH[0]) + WIDTH[0]
 
     # Deck
-    if random.random() < 0.7:
-        deck_position = random.random()*height/2
+    if np.random.random() < 0.7:
+        deck_position = np.random.random()*height/2
     else:
         deck_position = height
 
-    h_deck = [deck_position,random.random()*0.2+0.1]
+    h_deck = [deck_position, np.random.random()*0.2+0.1]
 
     # Elements
-    chords = [random.choice(profiles_chord), 0 + random.randint(0,4)*(np.pi/2), 1]
-    diagonals_vert = [random.choice(profiles_diagonals), random.randint(0,4)*(np.pi/2), 3] if random.random() < 0.7 else None
-    parallels_vert = [random.choice(profiles_vert), random.randint(0,4)*(np.pi/2), 2] if random.random() < 1 else None
-    diagonals_bottom = [random.choice(profiles_diagonals), random.randint(0,4)*(np.pi/2), 3] if random.random() < 0.7 else None
-    parallels_bottom = [random.choice(profiles_parallel), random.randint(0,4)*(np.pi/2), 2] if random.random() < 0.7 else None
-    diagonals_top = [random.choice(profiles_diagonals), random.randint(0,4)*(np.pi/2), 3] if random.random() < 0.7 and deck_position!=height else None
-    parallels_top = [random.choice(profiles_parallel), random.randint(0,4)*(np.pi/2), 2] if random.random() < 0.7 and deck_position!=height else None
-    diagonals_inner = [random.choice(profiles_inner), random.randint(0,4)*(np.pi/2), 3] if random.random() < 0.7 and deck_position>1 else None
+    chords = [np.random.choice(profiles_chord), 0 + np.random.randint(0,4)*(np.pi/2), 1]
+    diagonals_vert = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 else None
+    parallels_vert = [np.random.choice(profiles_vert), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 1 else None
+    diagonals_bottom = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 else None
+    parallels_bottom = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 else None
+    diagonals_top = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 and deck_position!=height else None
+    parallels_top = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position!=height else None
+    diagonals_inner = [np.random.choice(profiles_inner), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 and deck_position>1 else None
     
     #=================================================================================================================================================
-    # Positions of the LIDAR. their are calcualted consider the point centre in (0,0,0)
-    # Deck. 4 cameras_deck por position to do 360.
-    n_deck_cameras = random.randint(CAMARA_DECK[0], CAMARA_DECK[1])
-    n_deck_cameras=1
+    # Positions of the LIDAR. their are calcualted consider the point centre in (0,0,0).
+    # Number of cams
+    n_cameras_deck = np.random.randint(N_CAMARA_DECK[0], N_CAMARA_DECK[1]) if deck_position != height else 0
+    n_cameras_down = np.random.randint(N_CAMARA_DOWN[0], N_CAMARA_DOWN[1])
+    n_cameras_lat_pos = np.random.randint(N_CAMARA_LAT[0], N_CAMARA_LAT[1])
+    n_cameras_lat_neg = np.random.randint(N_CAMARA_LAT[0], N_CAMARA_LAT[1])
+
+    while n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM:
+        if N_CAMARA_LAT[1] > n_cameras_lat_pos:
+            n_cameras_lat_pos = np.random.randint(n_cameras_lat_pos, N_CAMARA_LAT[1]) 
+        if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
+        if N_CAMARA_LAT[1] > n_cameras_lat_neg:
+            n_cameras_lat_neg = np.random.randint(n_cameras_lat_neg, N_CAMARA_LAT[1]) 
+        if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
+        if N_CAMARA_DOWN[1] > n_cameras_down:
+            n_cameras_down = np.random.randint(n_cameras_down, N_CAMARA_DOWN[1]) 
+        if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
+        if N_CAMARA_DECK[1] > n_cameras_deck:
+            n_cameras_deck = np.random.randint(n_cameras_deck, N_CAMARA_DECK[1]) if deck_position != height else 0
+
+    # DECK. 4 cameras_deck por position to do 360.
+    angle = LIDAR_ANGLE_DEG_DECK/4
+    px = int(angle*LIDAR_STEP_DEG)
     # Initialising
-    cameras_deck = np.zeros(n_deck_cameras*4, dtype='object')
-    rot90 = o3d.geometry.get_rotation_matrix_from_zyx((np.pi/2, 0.0, 0.0))
-    offset = np.asarray([0,0,1]) # Upper the deck
-    for i in range(n_deck_cameras):
-        # Spacing the positions
-        position = np.asarray([-length*n_drawers/2 + (i+1)/(n_deck_cameras+1)* length*n_drawers,0,-height/2+deck_position+1])
+    cameras_deck = np.zeros(n_cameras_deck*4, dtype='object')
+    for j in range(n_cameras_deck):
+        # Spacing the positions.
+        position = np.zeros(3)
+        position[0] = -length*n_drawers/2 + (j+1)/(n_cameras_deck+1)* length*n_drawers + np.random.normal(scale=SIGMA[0])
+        position[1] = 0 + np.random.normal(scale=SIGMA[1])
+        position[2] = -height/2+deck_position + np.random.random() * (CAM_DIST_DECK[1] - CAM_DIST_DECK[0]) + CAM_DIST_DECK[0]
 
-        # pointing point_0 and pint_1 of the deck
-        cameras_deck[i*4] = {'fov_deg': 90, 'center':position + [1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
-        cameras_deck[i*4+1] = {'fov_deg': 90, 'center':position + [-1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
+        # pointing +X and -X.
+        cameras_deck[j*4] = {'fov_deg': angle, 'center':position + [1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
+        cameras_deck[j*4+1] = {'fov_deg': angle, 'center':position + [-1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
 
-        # rotate 90
-        # centre_0 = np.matmul(my_bridge.deck.point_0-position, rot90) + position + offset
-        # centre_1 = np.matmul(my_bridge.deck.point_1-position, rot90) + position + offset
-        cameras_deck[i*4+2] = {'fov_deg': 90, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
-        cameras_deck[i*4+3] = {'fov_deg': 90, 'center':position + [0,-1,0], 'eye':position, 'up':[0,0,1], 'width_px':500, 'height_px':500}
+        # pointing +Y and -Y
+        cameras_deck[j*4+2] = {'fov_deg': angle, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
+        cameras_deck[j*4+3] = {'fov_deg': angle, 'center':position + [0,-1,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
 
-    cameras = cameras_deck
+    angle = LIDAR_ANGLE_DEG
+    px = int(angle*LIDAR_STEP_DEG)
+
+    #DOWN
+    # Initialising
+    cameras_down = np.zeros(n_cameras_down, dtype='object')
+    for j in range(n_cameras_down):
+        # Spacing the positions.
+        position = np.zeros(3)
+        position[0] = -length*n_drawers/2 + (j+1)/(n_cameras_down+1)* length*n_drawers + np.random.normal(scale=SIGMA[0])
+        position[1] = 0 + np.random.normal(scale=SIGMA[1])
+        position[2] = -height/2 + np.random.random() * (CAM_DIST_DOWN[1] - CAM_DIST_DOWN[0]) + CAM_DIST_DOWN[0]
+
+        # camera pointing +Z
+        cameras_down[j] = {'fov_deg': angle, 'center':position + [0,0,1], 'eye':position, 'up':[1,0,0], 'width_px':px, 'height_px':px}
+
+    #LATERAL +Y
+    # Initialising
+    cameras_lateral_pos = np.zeros(n_cameras_lat_pos, dtype='object')
+    for j in range(n_cameras_lat_pos):
+        # Spacing the positions.
+        position = np.zeros(3)
+        position[0] = -length*n_drawers/2 + (j+1)/(n_cameras_lat_pos+1)* length*n_drawers + np.random.normal(scale=SIGMA[0])
+        position[1] = width/2 + np.random.random() * (CAM_DIST_LAT_Y[1] - CAM_DIST_LAT_Y[0]) + CAM_DIST_LAT_Y[0]
+        position[2] = np.random.random() * (CAM_DIST_LAT_Z[1] - CAM_DIST_LAT_Z[0]) + CAM_DIST_LAT_Z[0]
+
+        # camera pointing -Y
+        cameras_lateral_pos[j] = {'fov_deg': angle, 'center':position + [0,-1,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
+
+    #LATERAL -Y
+    # Initialising
+    cameras_lateral_neg = np.zeros(n_cameras_lat_neg, dtype='object')
+    for j in range(n_cameras_lat_neg):
+        # Spacing the positions.
+        position = np.zeros(3)
+        position[0] = -length*n_drawers/2 + (j+1)/(n_cameras_lat_neg+1)* length*n_drawers + np.random.normal(scale=SIGMA[0])
+        position[1] = -width/2 - np.random.random() * (CAM_DIST_LAT_Y[1] - CAM_DIST_LAT_Y[0]) + CAM_DIST_LAT_Y[0]
+        position[2] = np.random.random() * (CAM_DIST_LAT_Z[1] - CAM_DIST_LAT_Z[0]) + CAM_DIST_LAT_Z[0]
+
+        # camera pointing +Y
+        cameras_lateral_neg[j] = {'fov_deg': angle, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
+
+    cameras = np.concatenate((cameras_deck, cameras_down, cameras_lateral_pos, cameras_lateral_neg))
 
     #=================================================================================================================================================
     my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
@@ -145,7 +223,7 @@ for i in range(N_POINT_CLOUDS):
                             density=DENSITY, cameras=cameras
                             )
 
-    my_bridge.show_pc()
+    # my_bridge.show_pc()
 
     # Visualization
     # mesh = my_bridge.mesh()
@@ -156,8 +234,8 @@ for i in range(N_POINT_CLOUDS):
     # point_cloud = my_bridge.point_cloud()
     # o3d.visualization.draw_geometries([point_cloud, coordinates])
 
-    file_name = my_bridge.name + "_" + str(i).zfill(N_DIGITS) + extension
+    file_name = my_bridge.name + "_" + str(i).zfill(N_DIGITS) + FILE_TYPE
 
-    file_path = path_out.joinpath(file_name)
+    file_path = PATH_OUT.joinpath(file_name)
 
-    my_bridge.save_las(path=file_path, scale=DECIMALS)
+    my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)

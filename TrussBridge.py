@@ -256,6 +256,8 @@ class TrussBridge(object):
     def label_nodes(self, distance) -> np.ndarray:
         '''
         Method to label the points by their distance to the nodes.
+
+        :param distance: maximum distance between a point and a node to be labelled as node point.
         '''
         
 
@@ -277,7 +279,7 @@ class TrussBridge(object):
         return classification, instance
 
 
-    def save_las(self, path: str, version:float = 1.4, point_format:int = 6, scale=0.01, indexes : list = None, distance_nodes : float = None):
+    def save_las(self, path:str, version:float = 1.4, point_format:int = 6, scale:float = 0.01, distance_nodes:float = None):
         """"
         Function to save to the point cloud as LAS or LAZ.
         User_data field containd the unique id of each beam
@@ -287,24 +289,17 @@ class TrussBridge(object):
         :param version: version of the LAS. 1.4 by default.
         :param point_format: point format of the LAS. 6 by default.
         :param scale: scale of LAS. 0.01 by default.
-        :param indexes: selected indexes to be save. All by default.
         :param distance_nodes: if specified, those points closer to a node than this parameters are labeled with 1.
         """
 
-        if not isinstance(distance_nodes,type(None)):
-            classification, instance = self.label_nodes(distance_nodes)
+        if not distance_nodes is None:
+            classification_node, _ = self.label_nodes(distance_nodes)
 
-        else:    
-            classification, instance = self.get_class_and_ins()
+
+        classification, instance = self.get_class_and_ins()
 
         # Locations
         location = np.asarray(self.point_cloud().points)
-
-        # If indexes
-        if not isinstance(indexes,type(None)):
-            location = location[indexes]
-            classification = classification[indexes]
-            instance = instance[indexes]
 
         # Header of the LAS
         header = laspy.LasHeader(version=str(version), point_format=point_format)
@@ -320,7 +315,14 @@ class TrussBridge(object):
         las.y = location[:,1]
         las.z = location[:,2]
         las.classification = classification
-        las.user_data = instance
+        # las.user_data = instance
+        las.add_extra_dim(laspy.point.format.ExtraBytesParams('instances', 'uint16'))
+        setattr(las, 'instances', instance) 
+        
+
+        if not distance_nodes is None:
+            las.add_extra_dim(laspy.point.format.ExtraBytesParams('nodes', 'uint8')) # non sei como gardalo como boolean
+            setattr(las, 'nodes', classification_node)         
         
         # Save
         las.write(path)
