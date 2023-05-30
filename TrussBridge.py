@@ -301,19 +301,16 @@ class TrussBridge(object):
         # Locations
         location = np.asarray(self.point_cloud().points)
 
-        # Header of the LAS
-        header = laspy.LasHeader(version=str(version), point_format=point_format)
-
         # LAS object
-        las = laspy.LasData(header)
+        las = laspy.create(point_format=point_format,file_version=str(version))
         # Offset and scale
         las.header.offset = np.mean(np.concatenate((location.max(axis=0).reshape(-1,1),location.min(axis=0).reshape(-1,1)),axis=1),axis=1).tolist()
-        las.header.scale = header.scale = [scale,scale,scale]
+        las.header.scale = [scale,scale,scale]
 
         # Write in las object.
-        las.x = location[:,0]
-        las.y = location[:,1]
-        las.z = location[:,2]
+        las.X = (location[:,0] - las.header.offsets[0]) / las.header.scales[0]
+        las.Y = (location[:,1] - las.header.offsets[1]) / las.header.scales[1]
+        las.Z = (location[:,2] - las.header.offsets[2]) / las.header.scales[2]
         las.classification = classification
         # las.user_data = instance
         las.add_extra_dim(laspy.point.format.ExtraBytesParams('instances', 'uint16'))

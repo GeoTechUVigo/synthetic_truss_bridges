@@ -33,7 +33,7 @@ import open3d as o3d
 # Parameters
 
 PATH_OUT = "data/occlusions_and_nodes"
-FILE_TYPE = ".las"
+FILE_TYPE = ".laz"
 
 # TRUSS PARAMETERS
 N_POINT_CLOUDS = 100
