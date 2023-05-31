@@ -35,6 +35,9 @@ import open3d as o3d
 PATH_OUT = "data/occlusions_and_nodes"
 FILE_TYPE = ".laz"
 
+PATH_NODES = "data/nodes"
+PATH_DIST_NODES = "data/dist_nodes"
+
 # TRUSS PARAMETERS
 N_POINT_CLOUDS = 100
 DRAWERS = [4,10]
@@ -75,6 +78,8 @@ SIGMA = [1.0, 0.2, 0] # Standar deviation in XYZ. Used in the dimensions in whic
 # ============================================================================
 np.random.seed(SEED)
 PATH_OUT = pathlib.Path(PATH_OUT)
+PATH_NODES = pathlib.Path(PATH_NODES)
+PATH_DIST_NODES = pathlib.Path(PATH_DIST_NODES)
 if not PATH_OUT.is_dir(): raise ValueError("PATH_OUT {} does not exist.".format(str(PATH_OUT)))
 
 # list profiles by type of beam
@@ -237,8 +242,18 @@ for i in range(N_POINT_CLOUDS):
     # point_cloud = my_bridge.point_cloud()
     # o3d.visualization.draw_geometries([point_cloud, coordinates])
 
-    file_name = my_bridge.name + "_" + str(i).zfill(N_DIGITS) + FILE_TYPE
+    file_name = pathlib.Path(my_bridge.name + "_" + str(i).zfill(N_DIGITS))
 
-    file_path = PATH_OUT.joinpath(file_name)
-
+    file_path = PATH_OUT.joinpath(file_name).with_suffix(FILE_TYPE)
     my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)
+
+    # Save nodes
+    file_path = PATH_NODES.joinpath(file_name).with_suffix('.npy')
+    np.save(str(file_path), my_bridge.node_coordinates)
+
+    # Save distance between nodes
+    file_path = PATH_DIST_NODES.joinpath(file_name).with_suffix('.npy')
+
+    dist_nodes = np.repeat(np.expand_dims(my_bridge.node_coordinates, axis=0), len(my_bridge.node_coordinates), axis=0)
+    dist_nodes = np.linalg.norm(dist_nodes - np.transpose(dist_nodes, axes=[1,0,2]), axis=2)
+    np.save(str(file_path), dist_nodes)
