@@ -41,6 +41,7 @@ DRAWERS = [4,10]
 HEIGH = [3,5]
 LENGHT = [3,5]
 WIDTH = [2,5]
+INNER_PATERNS = [1,3]
 DENSITY = 1000
 
 # ORIENTATION
@@ -126,8 +127,9 @@ for i in range(N_POINT_CLOUDS):
     parallels_bottom = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 else None
     diagonals_top = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 and deck_position!=height else None
     parallels_top = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position!=height else None
-    diagonals_inner = [np.random.choice(profiles_inner), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 and deck_position>1 else None
-    
+    parallels_inner = [np.random.randint(np.clip(1,INNER_PATERNS[0], np.inf), INNER_PATERNS[1]-1), np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position>1 else None
+    diagonals_inner = [np.random.choice(profiles_inner), np.random.randint(0,4)*(np.pi/2), 3] if (np.random.random() < 0.7 and deck_position>1) or parallels_inner is not None else None
+
     #=================================================================================================================================================
     # Positions of the LIDAR. their are calcualted consider the point centre in (0,0,0).
     # Number of cams
@@ -214,11 +216,12 @@ for i in range(N_POINT_CLOUDS):
     cameras = np.concatenate((cameras_deck, cameras_down, cameras_lateral_pos, cameras_lateral_neg))
 
     #=================================================================================================================================================
+    
     my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
                             diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
                             diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
                             diagonal_top=diagonals_top, parallel_top=parallels_top,
-                            diagonal_inner=diagonals_inner,
+                            diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
                             centre=centre, orientation=orientation,
                             density=DENSITY, cameras=cameras
                             )

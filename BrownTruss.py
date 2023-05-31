@@ -22,8 +22,8 @@ class BrownTruss(TrussBridge):
 
 
     def __init__(self, n_drawers:int, height:float, length:float, width:float, h_deck:float, centre=[0,0,0], orientation=[0,0,0],
-                 chord:list = None, diagonal_vert:list = None, parallel_vert:list = None, diagonal_bottom:list = None, 
-                 parallel_bottom:list = None, diagonal_top:list = None, parallel_top:list = None, diagonal_inner:list = None,
+                 chord:list = None, diagonal_vert:list = None, parallel_vert:list = None, diagonal_bottom:list = None, parallel_bottom:list = None, 
+                 diagonal_top:list = None, parallel_top:list = None, diagonal_inner:list = None, parallel_inner:list = None,
                  density=None, cameras=None) -> TrussBridge:
         """
         Class child of TrussBridge. 
@@ -49,6 +49,7 @@ class BrownTruss(TrussBridge):
         :param diagonal_top: [string, doulbe, uint] profile of top diagonal beams,its orientation and the class number.
         :param parallel_top: [string, doulbe, uint] profile of top parallel beams,its orientation and the class number.
         :param diagonal_inner: [string, doulbe, uint] profile of inner diagonal beams,its orientation and the class number.
+        :param parallel_inner: [uint, string, double, uint] number of parallel beams by inner face, its profile, its orientation and the class number.
         :param density: density of the point cloud (points/m²).
         :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px']. Consider the point centre in (0,0,0)
         """
@@ -235,35 +236,71 @@ class BrownTruss(TrussBridge):
         #############################################################################################
         # Inner faces
         #############################################################################################
+        # Number of inner patterns
+        inner_pat = 1 if parallel_inner is None else parallel_inner[0]+1
+
         ## Diagonals    
-        if not isinstance(diagonal_inner, type(None)):
+        if isinstance(diagonal_inner, type(None)):
+            diagonal_inner = None
+        else:
           
             # First and last point of each diagonal
-            # Upper diagonals
             n_beams = n_drawers + 1
 
-            beam_p0 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
-                                       np.zeros([n_beams,1]), 
-                                       np.zeros([n_beams,1])), axis=1)
-            beam_p1 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
-                                       np.ones([n_beams,1]) * width, 
-                                       np.ones([n_beams,1]) * h_deck[0]), axis=1)
+            beam_p0 = np.zeros((0,3))
+            beam_p1 = np.zeros((0,3))
+            for i in range(inner_pat):
 
-            # Adding downer diagonals
-            beam_p0 = np.concatenate((beam_p0, 
-                                      np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
-                                                       np.zeros([n_beams,1]), 
-                                                       np.ones([n_beams,1]) * h_deck[0]), axis=1)),axis=0)
-            beam_p1 = np.concatenate((beam_p1, 
-                                      np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
-                                                       np.ones([n_beams,1]) * width, 
-                                                       np.zeros([n_beams,1])), axis=1)),axis=0)
+                # Upper diagonals
+                beam_p0 = np.concatenate((beam_p0,
+                                          np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                                           np.zeros([n_beams,1]) + width/inner_pat * i, 
+                                                           np.zeros([n_beams,1])), axis=1)),axis=0)
+                beam_p1 = np.concatenate((beam_p1,
+                                          np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                                           np.zeros([n_beams,1]) + width/inner_pat * (i+1), 
+                                                           np.ones([n_beams,1]) * h_deck[0]), axis=1)),axis=0)
+
+                # Adding downer diagonals
+                beam_p0 = np.concatenate((beam_p0, 
+                                        np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                                        np.zeros([n_beams,1]) + width/inner_pat * i, 
+                                                        np.ones([n_beams,1]) * h_deck[0]), axis=1)),axis=0)
+                beam_p1 = np.concatenate((beam_p1, 
+                                        np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                                        np.zeros([n_beams,1]) + width/inner_pat * (i+1), 
+                                                        np.zeros([n_beams,1])), axis=1)),axis=0)
+
 
             # Updating number of diagonals 
             n_beams = len(beam_p0)
 
             # Update nodes
             node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, diagonal_inner)
+
+
+        ## Parallel
+        if parallel_inner is None:
+            parallel_inner = None
+        else:
+
+            # First and last point of each parallel
+            n_beams = n_drawers + 1
+
+            beam_p0 = np.zeros((0,3))
+            beam_p1 = np.zeros((0,3))
+            for i in range(inner_pat-1):
+                beam_p0 = np.concatenate((beam_p0,
+                                          np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                                           np.zeros([n_beams,1]) + width/inner_pat * (i+1), 
+                                                           np.zeros([n_beams,1])), axis=1)),axis=0)
+                beam_p1 = np.concatenate((beam_p1,
+                                          np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                                           np.zeros([n_beams,1]) + width/inner_pat * (i+1), 
+                                                           np.ones([n_beams,1]) * h_deck[0]), axis=1)),axis=0)
+            
+            # Update nodes
+            node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_inner[1:])
 
         ###########################################################################################################################
         # Remove repited nodes.
