@@ -207,8 +207,9 @@ class Beam(object):
         mesh.triangles = o3d.utility.Vector3iVector(triangles)
 
         # Centre
-        mesh.vertices = o3d.utility.Vector3dVector(np.asarray(mesh.vertices) - mesh.get_center())
-
+        #mesh.vertices = o3d.utility.Vector3dVector(np.asarray(mesh.vertices) - mesh.get_center())
+        mesh.vertices = o3d.utility.Vector3dVector(np.asarray(mesh.vertices) - (mesh.get_max_bound()-mesh.get_min_bound())/2)
+                                                   
         #===========================================================================================
         ## Place the mesh
 
