@@ -64,9 +64,9 @@ LIDAR_STEP_DEG = 5
 LIDAR_ANGLE_DEG = 150
 LIDAR_ANGLE_DEG_DECK = 360
 # Number of scans by position of the LiDAR in the bridge
-N_CAMARA_DECK = [2,4]
-N_CAMARA_DOWN = [0,5]
-N_CAMARA_LAT = [0,5] # It is done in both sides
+N_CAMARA_DECK = [2,3]
+N_CAMARA_DOWN = [0,4]
+N_CAMARA_LAT = [0,4] # It is done in both sides
 MIN_CAM = 3
 # Positions
 CAM_DIST_DECK = [0.5, 1.5] # distance Z to the deck
@@ -132,29 +132,29 @@ for i in range(N_POINT_CLOUDS):
     parallels_bottom = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 else None
     diagonals_top = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 and deck_position!=height else None
     parallels_top = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position!=height else None
-    parallels_inner = [np.random.randint(np.clip(1,INNER_PATERNS[0], np.inf), INNER_PATERNS[1]-1), np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position>1 else None
+    parallels_inner = [np.random.randint(np.clip(1,INNER_PATERNS[0], np.inf), INNER_PATERNS[1]), np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position>1 else None
     diagonals_inner = [np.random.choice(profiles_inner), np.random.randint(0,4)*(np.pi/2), 3] if (np.random.random() < 0.7 and deck_position>1) or parallels_inner is not None else None
 
     #=================================================================================================================================================
     # Positions of the LIDAR. their are calcualted consider the point centre in (0,0,0).
     # Number of cams
-    n_cameras_deck = np.random.randint(N_CAMARA_DECK[0], N_CAMARA_DECK[1]) if deck_position != height else 0
-    n_cameras_down = np.random.randint(N_CAMARA_DOWN[0], N_CAMARA_DOWN[1])
-    n_cameras_lat_pos = np.random.randint(N_CAMARA_LAT[0], N_CAMARA_LAT[1])
-    n_cameras_lat_neg = np.random.randint(N_CAMARA_LAT[0], N_CAMARA_LAT[1])
+    n_cameras_deck = np.random.randint(N_CAMARA_DECK[0], N_CAMARA_DECK[1]+1) if deck_position != height else 0
+    n_cameras_down = np.random.randint(N_CAMARA_DOWN[0], N_CAMARA_DOWN[1]+1)
+    n_cameras_lat_pos = np.random.randint(N_CAMARA_LAT[0], N_CAMARA_LAT[1]+1)
+    n_cameras_lat_neg = np.random.randint(N_CAMARA_LAT[0], N_CAMARA_LAT[1]+1)
 
     while n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM:
         if N_CAMARA_LAT[1] > n_cameras_lat_pos:
-            n_cameras_lat_pos = np.random.randint(n_cameras_lat_pos, N_CAMARA_LAT[1]) 
+            n_cameras_lat_pos = np.random.randint(n_cameras_lat_pos, N_CAMARA_LAT[1]+1) 
         if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
         if N_CAMARA_LAT[1] > n_cameras_lat_neg:
-            n_cameras_lat_neg = np.random.randint(n_cameras_lat_neg, N_CAMARA_LAT[1]) 
+            n_cameras_lat_neg = np.random.randint(n_cameras_lat_neg, N_CAMARA_LAT[1]+1) 
         if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
         if N_CAMARA_DOWN[1] > n_cameras_down:
-            n_cameras_down = np.random.randint(n_cameras_down, N_CAMARA_DOWN[1]) 
+            n_cameras_down = np.random.randint(n_cameras_down, N_CAMARA_DOWN[1]+1) 
         if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
         if N_CAMARA_DECK[1] > n_cameras_deck:
-            n_cameras_deck = np.random.randint(n_cameras_deck, N_CAMARA_DECK[1]) if deck_position != height else 0
+            n_cameras_deck = np.random.randint(n_cameras_deck, N_CAMARA_DECK[1]+1) if deck_position != height else 0
 
     # DECK. 4 cameras_deck por position to do 360.
     angle = LIDAR_ANGLE_DEG_DECK/4
