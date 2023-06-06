@@ -23,34 +23,6 @@ from TrussBridge import TrussBridge
 import copy
 import pandas as pd
 import pathlib
+from SanAndrewCrossesPanel import san_andrew_crosses_face
 
-FILE_PATH = "/home/lamas/Documentos/GitHub/SAFEWAY_truss_bridge_deep_learning/Images/LAS/point_cloud.las"
-
-
-chord = ["IPN-600", np.pi/2, 1]
-diagonals_vert = None
-parallels_vert = None
-diagonals_bottom =None
-parallels_bottom = None
-diagonals_top = None
-parallels_top = None
-diagonals_inner = None
-
-chord = ["IPN-600", 0, 1]
-diagonals_vert = ["U-65x42x5.5", 0, 3]
-parallels_vert = ["HD-260x114", 0, 2]
-# diagonals_bottom = ["U-65x42x5.5", np.pi/2, 3]
-parallels_bottom = ["HD-260x114", np.pi/2, 2]
-# diagonals_top = ["HD-260x114", np.pi/2, 3]
-# parallels_top = ["HD-400x382", np.pi/2, 2]
-diagonals_inner = ["UPE-80", np.pi/2, 3]
-
-my_bridge = BrownTruss(n_drawers=5, height=4, length=3, width=2, h_deck=[2.5, 0.3], 
-                       chord=chord, diagonal_vert=diagonals_vert, parallel_vert=parallels_vert, 
-                       diagonal_bottom= diagonals_bottom, parallel_bottom=parallels_bottom,
-                       diagonal_top = diagonals_top, parallel_top = parallels_top,
-                       diagonal_inner =diagonals_inner, centre= [0,0,0], orientation=[0,0,0],
-                       density=1000
-                       )
-
-my_bridge.show_pc()
+a = san_andrew_crosses_face(2,True, True)

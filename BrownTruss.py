@@ -16,7 +16,7 @@ with the program in COPYING. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from TrussBridge import TrussBridge
-
+from utils import line_intersection
 
 class BrownTruss(TrussBridge):
 
@@ -24,7 +24,7 @@ class BrownTruss(TrussBridge):
     def __init__(self, n_drawers:int, height:float, length:float, width:float, h_deck:float, centre=[0,0,0], orientation=[0,0,0],
                  chord:list = None, diagonal_vert:list = None, parallel_vert:list = None, diagonal_bottom:list = None, parallel_bottom:list = None, 
                  diagonal_top:list = None, parallel_top:list = None, diagonal_inner:list = None, parallel_inner:list = None,
-                 density=None, cameras=None) -> TrussBridge:
+                 n_diag:int = 1, density=None, cameras=None) -> TrussBridge:
         """
         Class child of TrussBridge. 
         This constructor calculates the node_coordinates and the parametres of TrussBridge object based on the Brown Truss structure.
@@ -50,6 +50,7 @@ class BrownTruss(TrussBridge):
         :param parallel_top: [string, doulbe, uint] profile of top parallel beams,its orientation and the class number.
         :param diagonal_inner: [string, doulbe, uint] profile of inner diagonal beams,its orientation and the class number.
         :param parallel_inner: [uint, string, double, uint] number of parallel beams by inner face, its profile, its orientation and the class number.
+        :param n_diag: number of diagonals/panel [Default: 1].
         :param density: density of the point cloud (points/m²).
         :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px']. Consider the point centre in (0,0,0)
         """
@@ -73,30 +74,49 @@ class BrownTruss(TrussBridge):
         #############################################################################################
          ## Diagonals
         if not isinstance(diagonal_vert, type(None)):
-
+            
             # First and last point of each diagonal
             # Left to right diagonals in face XZ
-            n_beams = n_drawers
+            n_beams = n_drawers * n_diag + n_diag
 
-            beam_p0 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+            # 1st diagonal is only to create the array, so it is removed.
+            beam_p0 = np.concatenate(((np.arange(n_beams) * length/n_diag - length).reshape(-1,1),
                                        np.zeros([n_beams,1]), 
-                                       np.zeros([n_beams,1])), axis=1)
+                                       np.zeros([n_beams,1])), axis=1)[1:]
 
-            beam_p1 = np.concatenate(((np.arange(n_beams) * length + length).reshape(-1,1),
+            beam_p1 = np.concatenate(((np.arange(n_beams) * length/n_diag).reshape(-1,1),
                                        np.zeros([n_beams,1]), 
-                                       np.ones([n_beams,1]) * height), axis=1)
+                                       np.ones([n_beams,1]) * height), axis=1)[1:]
+
+            # Fix first diagonals and last diagonals since they are not completed
+            if n_diag > 1:
+                for i in range(n_diag-1):
+                    # start
+                    beam_p0[i, [0,2]] = line_intersection([beam_p0[i,[0,2]], beam_p1[i,[0,2]]], [[0,0],[0,height]])
+
+                    # end
+                    beam_p1[-(i+1), [0,2]] = line_intersection([beam_p0[-(i+1),[0,2]], beam_p1[-(i+1),[0,2]]], [[length*n_drawers,0],[length*n_drawers,height]])
 
             # Adding diagonals right to left
             beam_p0 = np.concatenate((beam_p0,
-                                      np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                      np.concatenate(((np.arange(n_beams) * length/n_diag - length).reshape(-1,1),
                                                        np.zeros([n_beams,1]), 
-                                                       np.ones([n_beams,1]) * height), axis=1)), axis=0)
+                                                       np.ones([n_beams,1]) * height), axis=1)[1:]), axis=0)
 
             beam_p1 = np.concatenate((beam_p1,
-                                      np.concatenate(((np.arange(n_beams) * length + length).reshape(-1,1),
+                                      np.concatenate(((np.arange(n_beams) * length/n_diag).reshape(-1,1),
                                                        np.zeros([n_beams,1]), 
-                                                       np.zeros([n_beams,1])), axis=1)), axis=0)
-            
+                                                       np.zeros([n_beams,1])), axis=1)[1:]), axis=0)
+
+            # Fix first diagonals and last diagonals since they are not completed
+            if n_diag > 1:
+                for i in range(n_diag-1):
+                    # beams at the star
+                    beam_p0[n_beams-1+i, [0,2]] = line_intersection([beam_p0[n_beams-1+i,[0,2]], beam_p1[n_beams-1+i,[0,2]]], [[0,0],[0,height]])
+
+                    # beams at the end
+                    beam_p1[-(i+1), [0,2]] = line_intersection([beam_p0[-(i+1),[0,2]], beam_p1[-(i+1),[0,2]]], [[length*n_drawers,0],[length*n_drawers,height]])
+
             # Updating number of diagonals 
             n_beams = len(beam_p0)
 

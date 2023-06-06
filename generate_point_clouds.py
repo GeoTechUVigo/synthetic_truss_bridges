@@ -31,7 +31,7 @@ import open3d as o3d
 # ============================================================================
 
 # Parameters
-
+BRIDGE_TYPE = 'BrownTruss'
 PATH_OUT = "data/occlusions_and_nodes"
 FILE_TYPE = ".laz"
 
@@ -146,13 +146,13 @@ for i in range(N_POINT_CLOUDS):
     while n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM:
         if N_CAMARA_LAT[1] > n_cameras_lat_pos:
             n_cameras_lat_pos = np.random.randint(n_cameras_lat_pos, N_CAMARA_LAT[1]+1) 
-        if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
+        if not n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
         if N_CAMARA_LAT[1] > n_cameras_lat_neg:
             n_cameras_lat_neg = np.random.randint(n_cameras_lat_neg, N_CAMARA_LAT[1]+1) 
-        if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
-        if N_CAMARA_DOWN[1] > n_cameras_down:
+        if not n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
+        if not N_CAMARA_DOWN[1] > n_cameras_down:
             n_cameras_down = np.random.randint(n_cameras_down, N_CAMARA_DOWN[1]+1) 
-        if n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
+        if not n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
         if N_CAMARA_DECK[1] > n_cameras_deck:
             n_cameras_deck = np.random.randint(n_cameras_deck, N_CAMARA_DECK[1]+1) if deck_position != height else 0
 
@@ -222,15 +222,29 @@ for i in range(N_POINT_CLOUDS):
 
     #=================================================================================================================================================
     
-    my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
-                            diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
-                            diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
-                            diagonal_top=diagonals_top, parallel_top=parallels_top,
-                            diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
-                            centre=centre, orientation=orientation,
-                            density=DENSITY, cameras=cameras
-                            )
-
+    if BRIDGE_TYPE == 'BaileyTruss':
+        my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
+                                diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
+                                diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
+                                diagonal_top=diagonals_top, parallel_top=parallels_top,
+                                diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
+                                centre=centre, orientation=orientation,
+                                density=DENSITY, cameras=cameras
+                                )
+    
+    elif BRIDGE_TYPE == 'BrownTruss':
+        my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
+                                diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
+                                diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
+                                diagonal_top=diagonals_top, parallel_top=parallels_top,
+                                diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
+                                centre=centre, orientation=orientation,
+                                n_diag=4, density=DENSITY, cameras=cameras
+                                )
+        
+    else:
+        raise TypeError('Bridge type not supported')
+    
     # my_bridge.show_pc()
 
     # Visualization
