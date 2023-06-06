@@ -45,6 +45,7 @@ HEIGH = [3,5]
 LENGHT = [3,5]
 WIDTH = [2,5]
 INNER_PATERNS = [1,3]
+DIAG_PANEL = [1,4]
 DENSITY = 1000
 
 # ORIENTATION
@@ -135,6 +136,8 @@ for i in range(N_POINT_CLOUDS):
     parallels_inner = [np.random.randint(np.clip(1,INNER_PATERNS[0], np.inf), INNER_PATERNS[1]), np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position>1 else None
     diagonals_inner = [np.random.choice(profiles_inner), np.random.randint(0,4)*(np.pi/2), 3] if (np.random.random() < 0.7 and deck_position>1) or parallels_inner is not None else None
 
+    n_diag = np.random.randint(DIAG_PANEL[0], DIAG_PANEL[1]+1)
+
     #=================================================================================================================================================
     # Positions of the LIDAR. their are calcualted consider the point centre in (0,0,0).
     # Number of cams
@@ -223,7 +226,7 @@ for i in range(N_POINT_CLOUDS):
     #=================================================================================================================================================
     
     if BRIDGE_TYPE == 'BaileyTruss':
-        my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
+        my_bridge = BaileyTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
                                 diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
                                 diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
                                 diagonal_top=diagonals_top, parallel_top=parallels_top,
@@ -239,7 +242,7 @@ for i in range(N_POINT_CLOUDS):
                                 diagonal_top=diagonals_top, parallel_top=parallels_top,
                                 diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
                                 centre=centre, orientation=orientation,
-                                n_diag=4, density=DENSITY, cameras=cameras
+                                n_diag=n_diag, density=DENSITY, cameras=cameras
                                 )
         
     else:
@@ -262,8 +265,8 @@ for i in range(N_POINT_CLOUDS):
     my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)
 
     # Save nodes
-    file_path = PATH_NODES.joinpath(file_name).with_suffix('.npy')
-    np.save(str(file_path), my_bridge.node_coordinates)
+    file_path = PATH_NODES.joinpath(file_name).with_suffix(FILE_TYPE)
+    my_bridge.save_nodes_las(str(file_path))
 
     # Save distance between nodes
     file_path = PATH_DIST_NODES.joinpath(file_name).with_suffix('.npy')
