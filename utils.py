@@ -79,9 +79,9 @@ def angle_between_2Dvectors(a,b) -> float:
     return angle_ab
 
 
-def line_intersection(line1, line2):
+def line_intersection(line1, line2, decimals=2):
     '''
-    Method for computing the point interseciton between 2 lines in 2D.
+    Method for computing the point interseciton between 2 segments in 2D.
 
     :param line1: tuple  with the endpoints of the line.
     :param line2: tuple  with the endpoints of the line.
@@ -96,9 +96,69 @@ def line_intersection(line1, line2):
 
     div = det(xdiff, ydiff)
     if div == 0:
-       raise Exception('lines do not intersect')
+       return None, None
 
     d = (det(*line1), det(*line2))
     x = det(d, xdiff) / div
     y = det(d, ydiff) / div
+
+    # If the intersection if out of segment limits
+    max_x = np.ceil(np.max((line1[:,0],line2[:,0]))*10**decimals)/10**decimals
+    min_x = np.floor(np.min((line1[:,0],line2[:,0]))*10**decimals)/10**decimals
+
+    max_y = np.ceil(np.max((line1[:,1],line2[:,1]))*10**decimals)/10**decimals
+    min_y = np.floor(np.min((line1[:,1],line2[:,1]))*10**decimals)/10**decimals
+
+    x_ = np.round(x, decimals=decimals)
+    y_ = np.round(y, decimals=decimals)
+    if x_ > max_x or x_ < min_x or y_ > max_y or y_ < min_y:
+
+        return None, None
+    
     return x, y
+
+def line_intersection_3d(A, B):
+    '''
+    Method for computing the point interseciton between 2 segments in 2D.
+
+    :param line1: tuple  with the endpoints of the line.
+    :param line2: tuple  with the endpoints of the line.
+    :return x,y
+    '''
+
+    A = np.array([[4, 0, 0], [4, -3, 0]])
+    B = np.array([[6, 2, 0], [10, 2, 0]])
+    if np.linalg.det(np.array([A[1]-A[0], B[0]-B[1]]).T) == 0: return None, None
+    t, s = np.linalg.solve(np.array([A[1]-A[0], B[0]-B[1]]).T, B[0]-A[0])
+
+    return (1-s)*B[0] + s*B[1]
+
+def in_line(line_ends, points):
+    '''
+    Method for checking which points are part of the line.
+
+    :param line1: endpoints of the lines.
+    :param points: points to be checked.
+    :return output
+    '''
+
+    output = np.ones(len(points),dtype=np.bool_)
+    
+    slope = line_ends[1] - line_ends[0]
+
+    mask = slope != 0 
+
+
+    results = (points[:,mask] - line_ends[0][mask]) / slope[mask]
+    
+    # If there are in the line, the result of the equation of each dimension must be the same
+    for i in range(results.shape[1]):
+        output = np.logical_and((results[:,0] - results[:,i])< 0.01, output)
+
+    # If slope == 0 in any dimensions, x=0 == x
+    if not np.all(mask):
+        for i in range(results.shape[1]):
+            if not mask[i]:
+                output = np.logical_and((line_ends[0,i] == points[:,i]), output)
+
+    return output

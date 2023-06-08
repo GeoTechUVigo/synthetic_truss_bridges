@@ -20,6 +20,7 @@ import numpy as np
 import laspy
 
 from Beam import Beam
+from Graph import Graph
 
 
 class TrussBridge(object):
@@ -52,6 +53,7 @@ class TrussBridge(object):
         
         # Beam objects and deck are generated in centre=[0,0,0] and orientation=[0,0,0].
         # Then, they are place. It is done to avoid rotation problems.
+        self.graph = Graph(node_coordinates[nodes])
         self.beam_setter()
         self.deck = Beam(deck[0], deck[1], ["deck", deck[2][0], deck[2][1]], 0)
 
@@ -123,7 +125,15 @@ class TrussBridge(object):
     @beam.setter
     def beam(self, beam):
         self.__beam = beam 
-        
+
+    @property
+    def graph(self):
+        return self.__graph
+
+    @graph.setter
+    def graph(self, graph):
+        self.__graph = graph 
+
     ###############################################################################
     # Methods
 

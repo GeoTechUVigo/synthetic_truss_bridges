@@ -50,7 +50,7 @@ class BrownTruss(TrussBridge):
         :param parallel_top: [string, doulbe, uint] profile of top parallel beams,its orientation and the class number.
         :param diagonal_inner: [string, doulbe, uint] profile of inner diagonal beams,its orientation and the class number.
         :param parallel_inner: [uint, string, double, uint] number of parallel beams by inner face, its profile, its orientation and the class number.
-        :param n_diag: number of diagonals/panel [Default: 1].
+        :param n_diag: number of diagonals/panel that starts in the down chord. [Default: 1].
         :param density: density of the point cloud (points/m²).
         :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px']. Consider the point centre in (0,0,0)
         """
@@ -92,10 +92,10 @@ class BrownTruss(TrussBridge):
             if n_diag > 1:
                 for i in range(n_diag-1):
                     # start
-                    beam_p0[i, [0,2]] = line_intersection([beam_p0[i,[0,2]], beam_p1[i,[0,2]]], [[0,0],[0,height]])
+                    beam_p0[i, [0,2]] = line_intersection(np.asarray([beam_p0[i,[0,2]], beam_p1[i,[0,2]]]), np.asarray([[0,0],[0,height]]))
 
                     # end
-                    beam_p1[-(i+1), [0,2]] = line_intersection([beam_p0[-(i+1),[0,2]], beam_p1[-(i+1),[0,2]]], [[length*n_drawers,0],[length*n_drawers,height]])
+                    beam_p1[-(i+1), [0,2]] = line_intersection(np.asarray([beam_p0[-(i+1),[0,2]], beam_p1[-(i+1),[0,2]]]), np.asarray([[length*n_drawers,0],[length*n_drawers,height]]))
 
             # Adding diagonals right to left
             beam_p0 = np.concatenate((beam_p0,
@@ -112,10 +112,10 @@ class BrownTruss(TrussBridge):
             if n_diag > 1:
                 for i in range(n_diag-1):
                     # beams at the star
-                    beam_p0[n_beams-1+i, [0,2]] = line_intersection([beam_p0[n_beams-1+i,[0,2]], beam_p1[n_beams-1+i,[0,2]]], [[0,0],[0,height]])
+                    beam_p0[n_beams-1+i, [0,2]] = line_intersection(np.asarray([beam_p0[n_beams-1+i,[0,2]], beam_p1[n_beams-1+i,[0,2]]]), np.asarray([[0,0],[0,height]]))
 
                     # beams at the end
-                    beam_p1[-(i+1), [0,2]] = line_intersection([beam_p0[-(i+1),[0,2]], beam_p1[-(i+1),[0,2]]], [[length*n_drawers,0],[length*n_drawers,height]])
+                    beam_p1[-(i+1), [0,2]] = line_intersection(np.asarray([beam_p0[-(i+1),[0,2]], beam_p1[-(i+1),[0,2]]]), np.asarray([[length*n_drawers,0],[length*n_drawers,height]]))
 
             # Updating number of diagonals 
             n_beams = len(beam_p0)
@@ -125,9 +125,6 @@ class BrownTruss(TrussBridge):
             # Changing Y dimension
             beam_p0[n_beams:, 1] = width
             beam_p1[n_beams:, 1] = width
-
-            # Updating number of diagonals 
-            n_beams = len(beam_p0)
 
             # Update nodes
             node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, diagonal_vert)
@@ -145,18 +142,15 @@ class BrownTruss(TrussBridge):
                                        np.zeros([n_beams,1]), 
                                        np.ones([n_beams,1]) * height), axis=1)
             
-            # Adding the diagonals in the other face. Mirror orientation
+            # Adding in the other face. Mirror orientation
             beam_p0, beam_p1 = np.concatenate((beam_p0, beam_p1),axis=0), np.concatenate((beam_p1, beam_p0),axis=0)
             # Changing Y dimension
             beam_p0[n_beams:, 1] = width
             beam_p1[n_beams:, 1] = width
 
-            # Updating number of diagonals 
-            n_beams = len(beam_p0)
-
             # Update nodes
             node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_vert)
-    
+      
         #############################################################################################
         # Horizontal down face
         #############################################################################################
@@ -205,6 +199,19 @@ class BrownTruss(TrussBridge):
             # Update nodes
             node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_bottom)
 
+            ## Parallel just below the deck
+            # First and last point of each parallel
+            n_beams = n_drawers + 1
+            beam_p0 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                       np.zeros([n_beams,1]), 
+                                       np.ones([n_beams,1]) * h_deck[0]), axis=1)
+            beam_p1 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                       np.ones([n_beams,1]) * width, 
+                                       np.ones([n_beams,1]) * h_deck[0]), axis=1)
+ 
+            # Update nodes
+            node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_bottom)
+           
         #############################################################################################
         # Horizontal up face
         #############################################################################################

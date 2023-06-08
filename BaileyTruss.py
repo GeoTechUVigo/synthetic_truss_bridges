@@ -201,6 +201,20 @@ class BaileyTruss(TrussBridge):
             # Update nodes
             node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_bottom)
 
+            ## Parallel just below the deck
+            # First and last point of each parallel
+            n_beams = n_drawers + 1
+            beam_p0 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                       np.zeros([n_beams,1]), 
+                                       np.ones([n_beams,1]) * h_deck[0]), axis=1)
+            beam_p1 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
+                                       np.ones([n_beams,1]) * width, 
+                                       np.ones([n_beams,1]) * h_deck[0]), axis=1)
+
+            # Update nodes
+            node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_bottom)
+
+
         #############################################################################################
         # Horizontal up face
         #############################################################################################
