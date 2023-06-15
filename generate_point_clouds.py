@@ -32,12 +32,12 @@ import open3d as o3d
 
 # Parameters
 BRIDGE_TYPE = 'BrownTruss'
-PATH_OUT = "data/single_inner_face"
 FILE_TYPE = ".laz"
+PATH_OUT = "data/several_inner_diag/point_clouds"
 
-PATH_NODES = "data/nodes"
-PATH_DIST_NODES = "data/dist_nodes"
-SAVE_NODES = False
+PATH_GRAPH = "data/several_inner_diag/graphs"
+PATH_DIST_NODES = ""
+SAVE_GRAPH = True
 SAVE_DISTANCES = False
 
 # TRUSS PARAMETERS
@@ -80,10 +80,13 @@ SIGMA = [1.0, 0.2, 0] # Standar deviation in XYZ. Used in the dimensions in whic
 
 # ============================================================================
 np.random.seed(SEED)
+
 PATH_OUT = pathlib.Path(PATH_OUT)
-PATH_NODES = pathlib.Path(PATH_NODES)
+PATH_GRAPH = pathlib.Path(PATH_GRAPH)
 PATH_DIST_NODES = pathlib.Path(PATH_DIST_NODES)
 if not PATH_OUT.is_dir(): raise ValueError("PATH_OUT {} does not exist.".format(str(PATH_OUT)))
+if not PATH_GRAPH.is_dir() and SAVE_GRAPH: raise ValueError("PATH_GRAPH {} does not exist.".format(str(PATH_GRAPH)))
+if not PATH_DIST_NODES.is_dir() and SAVE_DISTANCES: raise ValueError("PATH_DIST_NODES {} does not exist.".format(str(PATH_DIST_NODES)))
 
 # list profiles by type of beam
 profile_path = "standarized_profiles_formatted"
@@ -268,9 +271,9 @@ for i in range(N_POINT_CLOUDS):
     my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)
 
     # Save nodes
-    if SAVE_NODES:
-        file_path = PATH_NODES.joinpath(file_name).with_suffix(FILE_TYPE)
-        my_bridge.save_nodes_las(str(file_path))
+    if SAVE_GRAPH:
+        file_path = PATH_GRAPH.joinpath(file_name).with_suffix('.json')
+        my_bridge.graph.write(str(file_path))
 
     # Save distance between nodes
     if SAVE_DISTANCES:

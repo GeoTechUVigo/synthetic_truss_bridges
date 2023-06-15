@@ -53,7 +53,7 @@ class TrussBridge(object):
         
         # Beam objects and deck are generated in centre=[0,0,0] and orientation=[0,0,0].
         # Then, they are place. It is done to avoid rotation problems.
-        self.graph = Graph(node_coordinates[nodes])
+        self.graph = Graph.graph_from_structural_model(node_coordinates[nodes])
         self.beam_setter()
         self.deck = Beam(deck[0], deck[1], ["deck", deck[2][0], deck[2][1]], 0)
 
@@ -270,7 +270,7 @@ class TrussBridge(object):
 
     def label_nodes(self, distance) -> np.ndarray:
         '''
-        Method to label the points by their distance to the nodes.
+        Method to label the points by their distance to the graph nodes.
 
         :param distance: maximum distance between a point and a node to be labelled as node point.
         '''
@@ -282,7 +282,7 @@ class TrussBridge(object):
         instance = np.zeros((len(xyz)), dtype='int')
 
         idx = 0
-        for node in self.node_coordinates:
+        for node in self.graph.nodes:
 
                 idx += 1
 
@@ -441,9 +441,9 @@ class TrussBridge(object):
         nodes, edges = self.graph.get_pcd()
 
         #Wireframe
-        line= o3d.geometry.LineSet.create_from_triangle_mesh(self.mesh())
+        #line= o3d.geometry.LineSet.create_from_triangle_mesh(self.mesh())
 
-        o3d.visualization.draw([pcd_ins, pcd_sem, line, nodes, edges])
+        o3d.visualization.draw([pcd_ins, pcd_sem, nodes, edges])
 
 
     def point_cloud_from_positions(self, cameras):
