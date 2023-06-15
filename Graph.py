@@ -45,7 +45,7 @@ class Graph(object):
 
                 # same x
                 if np.absolute(beam_ends[i, 0, 0] - beam_ends[i, 1, 0]) < precision and np.absolute(beam_ends[j, 0, 0] - beam_ends[j, 1, 0]) < precision and np.absolute(beam_ends[i, 0, 0] - beam_ends[j, 0, 0]) < precision:
-                    x,y = line_intersection(beam_ends[i][:,[0,1]], beam_ends[j][:,[0,1]], decimals=2)
+                    x,y = line_intersection(beam_ends[i][:,[1,2]], beam_ends[j][:,[1,2]], decimals=2)
                     if x is not None:
                         intersections[i,j] = beam_ends[i, 0, 0], x, y
 
@@ -57,16 +57,71 @@ class Graph(object):
 
                 # same z
                 if np.absolute(beam_ends[i, 0, 2] - beam_ends[i, 1, 2]) < precision and np.absolute(beam_ends[j, 0, 2] - beam_ends[j, 1, 2]) < precision and np.absolute(beam_ends[i, 0, 2] - beam_ends[j, 0, 2]) < precision:
-                    x,y = line_intersection(beam_ends[i][:,[0,2]], beam_ends[j][:,[0,2]], decimals=2)
+                    x,y = line_intersection(beam_ends[i][:,[0,1]], beam_ends[j][:,[0,1]], decimals=2)
                     if x is not None:
                         intersections[i,j] = x, y, beam_ends[i, 0, 2]
 
         
         # set nodes
-        a = intersections.reshape(-1,3)
-        b = a[~np.isnan(a[:,0])]
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(b)
-        o3d.visualization.draw([pcd])
+        intersections_ = np.ones((len(beam_ends), len(beam_ends))) * np.nan
+        nodes = np.zeros((0,3))
+        for i in range(len(intersections)):
+            for j in range(len(intersections[i])):
+                node = intersections[i,j]
+
+                if np.all(np.isnan(node)): continue
+
+                new=True
+                for k in range(len(nodes)):
+                    if np.all(np.absolute(node - nodes[k]) < precision):
+                        new=False
+                        break
+                
+                if new == True:
+                    nodes = np.concatenate((nodes, node.reshape(1,-1)), axis=0)
+                    intersections_[i,j] = len(nodes)-1
+                else:
+                    intersections_[i,j] = k
+
+        # Edges
+        edges = np.zeros((0,3),dtype=np.int_)
+        for i in range(len(intersections)):
+
+            # nodes of this bar
+            node_idx = np.unique(intersections_[i])
+            node_idx = node_idx[~np.isnan(node_idx)].astype(np.int_)
+
+            # sort nodes by distance to the start node of the bar
+            order = np.argsort(np.linalg.norm(beam_ends[i][0] - nodes[node_idx], axis=1))
+            node_idx = node_idx[order]
+
+            start_node = node_idx[0]
+            for j in range(len(node_idx)-1):
+                end_node = node_idx[j+1]
+                this_edge = np.array([[start_node, end_node, i]])
+                edges = np.concatenate((edges,this_edge), axis=0)
+                start_node = end_node
+
+        self.nodes = nodes
+        self.edges = edges
+
+
+    def get_pcd(self):
+
+        nodes = o3d.geometry.PointCloud()
+        nodes.points = o3d.utility.Vector3dVector(self.nodes)
+
+        edges = o3d.geometry.LineSet()
+        edges.points = o3d.utility.Vector3dVector(self.nodes)
+        edges.lines = o3d.utility.Vector2iVector(self.edges[:,0:2])
+
+        return nodes, edges
+
+
+    def show(self):
+        
+        nodes, edges = self.get_pcd()
+    
+        o3d.visualization.draw([nodes, edges])
 
 

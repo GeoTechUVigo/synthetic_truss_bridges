@@ -32,11 +32,13 @@ import open3d as o3d
 
 # Parameters
 BRIDGE_TYPE = 'BrownTruss'
-PATH_OUT = "data/occlusions_and_nodes"
+PATH_OUT = "data/single_inner_face"
 FILE_TYPE = ".laz"
 
 PATH_NODES = "data/nodes"
 PATH_DIST_NODES = "data/dist_nodes"
+SAVE_NODES = False
+SAVE_DISTANCES = False
 
 # TRUSS PARAMETERS
 N_POINT_CLOUDS = 100
@@ -45,7 +47,7 @@ HEIGH = [3,5]
 LENGHT = [3,5]
 WIDTH = [2,5]
 INNER_PATERNS = [1,3]
-DIAG_PANEL = [1,4]
+DIAG_PANEL = [1,3]
 DENSITY = 1000
 
 # ORIENTATION
@@ -128,11 +130,12 @@ for i in range(N_POINT_CLOUDS):
     # Elements
     chords = [np.random.choice(profiles_chord), 0 + np.random.randint(0,4)*(np.pi/2), 1]
     diagonals_vert = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 else None
-    parallels_vert = [np.random.choice(profiles_vert), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 1 else None
+    parallels_vert = [np.random.choice(profiles_vert), np.random.randint(0,4)*(np.pi/2), 2]
     diagonals_bottom = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 else None
-    parallels_bottom = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 else None
+    parallels_bottom = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2]
+    parallels_deck = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if deck_position!=height else None
     diagonals_top = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 and deck_position!=height else None
-    parallels_top = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position!=height else None
+    parallels_top = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2]
     parallels_inner = [np.random.randint(np.clip(1,INNER_PATERNS[0], np.inf), INNER_PATERNS[1]), np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position>1 else None
     diagonals_inner = [np.random.choice(profiles_inner), np.random.randint(0,4)*(np.pi/2), 3] if (np.random.random() < 0.7 and deck_position>1) or parallels_inner is not None else None
 
@@ -228,7 +231,7 @@ for i in range(N_POINT_CLOUDS):
     if BRIDGE_TYPE == 'BaileyTruss':
         my_bridge = BaileyTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
                                 diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
-                                diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
+                                diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom, parallel_deck = parallels_deck,
                                 diagonal_top=diagonals_top, parallel_top=parallels_top,
                                 diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
                                 centre=centre, orientation=orientation,
@@ -238,7 +241,7 @@ for i in range(N_POINT_CLOUDS):
     elif BRIDGE_TYPE == 'BrownTruss':
         my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
                                 diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
-                                diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom,
+                                diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom, parallel_deck = parallels_deck,
                                 diagonal_top=diagonals_top, parallel_top=parallels_top,
                                 diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
                                 centre=centre, orientation=orientation,
@@ -265,12 +268,14 @@ for i in range(N_POINT_CLOUDS):
     my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)
 
     # Save nodes
-    file_path = PATH_NODES.joinpath(file_name).with_suffix(FILE_TYPE)
-    my_bridge.save_nodes_las(str(file_path))
+    if SAVE_NODES:
+        file_path = PATH_NODES.joinpath(file_name).with_suffix(FILE_TYPE)
+        my_bridge.save_nodes_las(str(file_path))
 
     # Save distance between nodes
-    file_path = PATH_DIST_NODES.joinpath(file_name).with_suffix('.npy')
+    if SAVE_DISTANCES:
+        file_path = PATH_DIST_NODES.joinpath(file_name).with_suffix('.npy')
 
-    dist_nodes = np.repeat(np.expand_dims(my_bridge.node_coordinates, axis=0), len(my_bridge.node_coordinates), axis=0)
-    dist_nodes = np.linalg.norm(dist_nodes - np.transpose(dist_nodes, axes=[1,0,2]), axis=2)
-    np.save(str(file_path), dist_nodes)
+        dist_nodes = np.repeat(np.expand_dims(my_bridge.node_coordinates, axis=0), len(my_bridge.node_coordinates), axis=0)
+        dist_nodes = np.linalg.norm(dist_nodes - np.transpose(dist_nodes, axes=[1,0,2]), axis=2)
+        np.save(str(file_path), dist_nodes)

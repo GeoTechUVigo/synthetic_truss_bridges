@@ -157,8 +157,8 @@ class TrussBridge(object):
         '''
 
         # Create PointCloud object with node_coordinates and deck points
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(np.concatenate((node_coordinates, np.concatenate((deck[0],deck[1])).reshape(-1,3))))
+        #pcd = o3d.geometry.PointCloud()
+        #pcd.points = o3d.utility.Vector3dVector(np.concatenate((node_coordinates, np.concatenate((deck[0],deck[1])).reshape(-1,3))))
 
         # Points to the new centre and orientation
         T = np.eye(4)
@@ -166,11 +166,11 @@ class TrussBridge(object):
         T[:3,-1] = self.centre
 
         # Transform
-        pcd = pcd.transform(T)
+        #pcd = pcd.transform(T)
 
         # Write properties
-        points = np.asarray(pcd.points)
-        self.node_coordinates = points[:-2]
+        #points = np.asarray(pcd.points)
+        #self.node_coordinates = points[:-2]
 
         for i in range(len(self.beam)):
             self.beam[i].mesh = self.beam[i].mesh.transform(T)
@@ -178,6 +178,11 @@ class TrussBridge(object):
 
         self.deck.mesh = self.deck.mesh.transform(T)
         self.deck.point_cloud = self.deck.point_cloud.transform(T)
+
+        # Transoform graph
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(self.graph.nodes)
+        self.graph.nodes = np.asarray(pcd.transform(T).points)
 
 
     def mesh(self) -> o3d.geometry.TriangleMesh():
@@ -433,10 +438,12 @@ class TrussBridge(object):
 
         pcd_ins.colors = o3d.utility.Vector3dVector(colours)
 
+        nodes, edges = self.graph.get_pcd()
+
         #Wireframe
         line= o3d.geometry.LineSet.create_from_triangle_mesh(self.mesh())
 
-        o3d.visualization.draw([pcd_ins, pcd_sem, line])
+        o3d.visualization.draw([pcd_ins, pcd_sem, line, nodes, edges])
 
 
     def point_cloud_from_positions(self, cameras):

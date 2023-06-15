@@ -22,7 +22,7 @@ class BrownTruss(TrussBridge):
 
 
     def __init__(self, n_drawers:int, height:float, length:float, width:float, h_deck:float, centre=[0,0,0], orientation=[0,0,0],
-                 chord:list = None, diagonal_vert:list = None, parallel_vert:list = None, diagonal_bottom:list = None, parallel_bottom:list = None, 
+                 chord:list = None, diagonal_vert:list = None, parallel_vert:list = None, diagonal_bottom:list = None, parallel_bottom:list = None, parallel_deck:list = None,
                  diagonal_top:list = None, parallel_top:list = None, diagonal_inner:list = None, parallel_inner:list = None,
                  n_diag:int = 1, density=None, cameras=None) -> TrussBridge:
         """
@@ -46,6 +46,7 @@ class BrownTruss(TrussBridge):
         :param parallel_vert: [string, doulbe, uint] profile of vertical parallel beams,its orientation and the class number.
         :param diagonal_bottom: [string, doulbe, uint] profile of bottom diagonal beams,its orientation and the class number.
         :param parallel_bottom: [string, doulbe, uint] profile of bottom parallel beams,its orientation and the class number.
+        :param parallel_deck: [string, double, uint] profile of parallel beams below the deck,its orientation and the class number.
         :param diagonal_top: [string, doulbe, uint] profile of top diagonal beams,its orientation and the class number.
         :param parallel_top: [string, doulbe, uint] profile of top parallel beams,its orientation and the class number.
         :param diagonal_inner: [string, doulbe, uint] profile of inner diagonal beams,its orientation and the class number.
@@ -199,7 +200,8 @@ class BrownTruss(TrussBridge):
             # Update nodes
             node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_bottom)
 
-            ## Parallel just below the deck
+        ## Parallel just below the deck
+        if parallel_deck is not None:
             # First and last point of each parallel
             n_beams = n_drawers + 1
             beam_p0 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
@@ -210,7 +212,7 @@ class BrownTruss(TrussBridge):
                                        np.ones([n_beams,1]) * h_deck[0]), axis=1)
  
             # Update nodes
-            node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_bottom)
+            node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem = TrussBridge.update_nodes(beam_nodes, beam_sect, beam_orient, beam_sem, node_coordinates, beam_p0, beam_p1, parallel_deck)
            
         #############################################################################################
         # Horizontal up face

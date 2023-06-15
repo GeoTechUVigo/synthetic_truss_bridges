@@ -103,11 +103,11 @@ def line_intersection(line1, line2, decimals=2):
     y = det(d, ydiff) / div
 
     # If the intersection if out of segment limits
-    max_x = np.ceil(np.max((line1[:,0],line2[:,0]))*10**decimals)/10**decimals
-    min_x = np.floor(np.min((line1[:,0],line2[:,0]))*10**decimals)/10**decimals
+    max_x = np.ceil(np.min((line1[:,0].max(),line2[:,0].max()))*10**decimals)/10**decimals
+    min_x = np.floor(np.max((line1[:,0].min(),line2[:,0].min()))*10**decimals)/10**decimals
 
-    max_y = np.ceil(np.max((line1[:,1],line2[:,1]))*10**decimals)/10**decimals
-    min_y = np.floor(np.min((line1[:,1],line2[:,1]))*10**decimals)/10**decimals
+    max_y = np.ceil(np.min((line1[:,1].max(),line2[:,1].max()))*10**decimals)/10**decimals
+    min_y = np.floor(np.max((line1[:,1].min(),line2[:,1].min()))*10**decimals)/10**decimals
 
     x_ = np.round(x, decimals=decimals)
     y_ = np.round(y, decimals=decimals)
