@@ -31,13 +31,15 @@ import open3d as o3d
 # ============================================================================
 
 # Parameters
-BRIDGE_TYPE = 'BrownTruss'
+BRIDGE_TYPE = 'BaileyTruss'
 FILE_TYPE = ".laz"
 PATH_OUT = "data/several_inner_diag/point_clouds"
 
 PATH_GRAPH = "data/several_inner_diag/graphs"
+PATH_TRANSFORM = "data/several_inner_diag/transform"
 PATH_DIST_NODES = ""
 SAVE_GRAPH = True
+SAVE_TRANSFORM = True
 SAVE_DISTANCES = False
 
 # TRUSS PARAMETERS
@@ -47,7 +49,7 @@ HEIGH = [3,5]
 LENGHT = [3,5]
 WIDTH = [2,5]
 INNER_PATERNS = [1,3]
-DIAG_PANEL = [1,3]
+DIAG_PANEL = [1,4]
 DENSITY = 1000
 
 # ORIENTATION
@@ -70,7 +72,7 @@ LIDAR_ANGLE_DEG_DECK = 360
 N_CAMARA_DECK = [2,3]
 N_CAMARA_DOWN = [0,4]
 N_CAMARA_LAT = [0,4] # It is done in both sides
-MIN_CAM = 3
+MIN_CAM = 4
 # Positions
 CAM_DIST_DECK = [0.5, 1.5] # distance Z to the deck
 CAM_DIST_DOWN = [-3, -10] # distance Z to the down face.
@@ -83,9 +85,11 @@ np.random.seed(SEED)
 
 PATH_OUT = pathlib.Path(PATH_OUT)
 PATH_GRAPH = pathlib.Path(PATH_GRAPH)
+PATH_TRANSFORM = pathlib.Path(PATH_TRANSFORM)
 PATH_DIST_NODES = pathlib.Path(PATH_DIST_NODES)
 if not PATH_OUT.is_dir(): raise ValueError("PATH_OUT {} does not exist.".format(str(PATH_OUT)))
 if not PATH_GRAPH.is_dir() and SAVE_GRAPH: raise ValueError("PATH_GRAPH {} does not exist.".format(str(PATH_GRAPH)))
+if not PATH_TRANSFORM.is_dir() and SAVE_TRANSFORM: raise ValueError("PATH_TRANSFORM {} does not exist.".format(str(PATH_TRANSFORM)))
 if not PATH_DIST_NODES.is_dir() and SAVE_DISTANCES: raise ValueError("PATH_DIST_NODES {} does not exist.".format(str(PATH_DIST_NODES)))
 
 # list profiles by type of beam
@@ -270,10 +274,15 @@ for i in range(N_POINT_CLOUDS):
     file_path = PATH_OUT.joinpath(file_name).with_suffix(FILE_TYPE)
     my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)
 
-    # Save nodes
+    # Save transformation matrix
+    if SAVE_TRANSFORM:
+        file_path = PATH_TRANSFORM.joinpath(file_name).with_suffix('.txt')
+        my_bridge.write_transformation(file_path)
+
+    # Save graph
     if SAVE_GRAPH:
         file_path = PATH_GRAPH.joinpath(file_name).with_suffix('.json')
-        my_bridge.graph.write(str(file_path))
+        my_bridge.graph.write(file_path)
 
     # Save distance between nodes
     if SAVE_DISTANCES:

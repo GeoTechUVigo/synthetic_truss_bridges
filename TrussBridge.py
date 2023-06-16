@@ -337,35 +337,21 @@ class TrussBridge(object):
             setattr(las, 'nodes', classification_node)         
         
         # Save
-        las.write(path)
+        las.write(str(path))
 
 
-    def save_nodes_las(self, path:str, version:float = 1.4, point_format:int = 6, scale:float = 0.01):
-        """"
-        Function to save the node coordinates as LAS file.
+    def write_transformation(self, path):
+        '''
+        Method to write the tranformation matrix used to place the bridge as txt.
 
-        :param path: string of the path to save the LAS.
-        :param version: version of the LAS. 1.4 by default.
-        :param point_format: point format of the LAS. 6 by default.
-        :param scale: scale of LAS. 0.01 by default.
-        """
+        :param path: str with the path.f
+        '''
 
-        # Locations
-        location = np.asarray(self.node_coordinates)
+        T = np.eye(4)
+        T[:3, :3]  = o3d.geometry.get_rotation_matrix_from_zyx((self.orientation[0], self.orientation[1], self.orientation[2]))
+        T[:3,-1] = self.centre
 
-        # LAS object
-        las = laspy.create(point_format=point_format,file_version=str(version))
-        # Offset and scale
-        las.header.offset = np.mean(np.concatenate((location.max(axis=0).reshape(-1,1),location.min(axis=0).reshape(-1,1)),axis=1),axis=1).tolist()
-        las.header.scale = [scale,scale,scale]
-
-        # Write in las object.
-        las.X = (location[:,0] - las.header.offsets[0]) / las.header.scales[0]
-        las.Y = (location[:,1] - las.header.offsets[1]) / las.header.scales[1]
-        las.Z = (location[:,2] - las.header.offsets[2]) / las.header.scales[2]
-        
-        # Save
-        las.write(path)
+        np.savetxt(str(path),T)
 
 
     @staticmethod
