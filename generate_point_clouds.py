@@ -31,7 +31,7 @@ import open3d as o3d
 # ============================================================================
 
 # Parameters
-BRIDGE_TYPE = 'BaileyTruss'
+BRIDGE_TYPE = 'BrownTruss'
 FILE_TYPE = ".laz"
 PATH_OUT = "data/several_inner_diag/point_clouds"
 

@@ -211,6 +211,11 @@ class Graph(object):
         edges = np.zeros((len(my_json['edges']),3), dtype=np.int_)
 
         for key, value in my_json['edges'].items():
-            edges[int(key)] = np.concatenate((value['nodes'], value['beam']), axis=0)
+            edge = np.array(value['nodes'])
+            for key_, value_ in value.items():
+                if key_ == 'nodes': continue
+                edge = np.append(edge, value_)
+
+            edges[int(key)] = edge
 
         return Graph(nodes=nodes, edges=edges)
