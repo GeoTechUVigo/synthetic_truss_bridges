@@ -20,7 +20,6 @@ from BaileyTruss import BaileyTruss
 from BrownTruss import BrownTruss
 
 
-
 chord = ["U-65x42x5.5", np.pi/2, 1]
 diagonals_vert = None
 parallels_vert = None

@@ -27,20 +27,24 @@ from BrownTruss import BrownTruss
 import pathlib
 import pandas as pd
 import open3d as o3d
+import json
+from camera_positions import camera_positions
 
 # ============================================================================
 
 # Parameters
-BRIDGE_TYPE = 'BaileyTruss'
 FILE_TYPE = ".laz"
-PATH_OUT = "data/several_inner_diag/point_clouds"
+PATH_OUT='data'
+PATH_OUT_UNIFORM = "data/uniform"
+PATH_OUT_OCCLUSIONS = "data/occlusions"
 
 PATH_GRAPH = "data/several_inner_diag/graphs"
 PATH_TRANSFORM = "data/several_inner_diag/transform"
 PATH_DIST_NODES = ""
-SAVE_GRAPH = True
-SAVE_TRANSFORM = True
-SAVE_DISTANCES = False
+SAVE_PARAMETRES = True
+SAVE_GRAPH = None
+SAVE_TRANSFORM = None
+SAVE_DISTANCES = None
 
 # TRUSS PARAMETERS
 N_POINT_CLOUDS = 100
@@ -48,8 +52,8 @@ DRAWERS = [4,10]
 HEIGH = [3,5]
 LENGHT = [3,5]
 WIDTH = [2,5]
-INNER_PATERNS = [1,3]
-DIAG_PANEL = [1,4]
+INNER_PATERNS = [0,0]
+DIAG_PANEL = [1,1]
 DENSITY = 1000
 
 # ORIENTATION
@@ -69,10 +73,10 @@ LIDAR_STEP_DEG = 5
 LIDAR_ANGLE_DEG = 150
 LIDAR_ANGLE_DEG_DECK = 360
 # Number of scans by position of the LiDAR in the bridge
-N_CAMARA_DECK = [2,3]
-N_CAMARA_DOWN = [0,4]
-N_CAMARA_LAT = [0,4] # It is done in both sides
-MIN_CAM = 4
+N_CAMERA_DECK = [2,3]
+N_CAMERA_DOWN = [2,4]
+N_CAMERA_LAT = [2,4] # It is done in both sides
+MIN_CAM = 6
 # Positions
 CAM_DIST_DECK = [0.5, 1.5] # distance Z to the deck
 CAM_DIST_DOWN = [-3, -10] # distance Z to the down face.
@@ -84,13 +88,48 @@ SIGMA = [1.0, 0.2, 0] # Standar deviation in XYZ. Used in the dimensions in whic
 np.random.seed(SEED)
 
 PATH_OUT = pathlib.Path(PATH_OUT)
+PATH_OUT_UNIFORM = pathlib.Path(PATH_OUT_UNIFORM)
+PATH_OUT_OCCLUSIONS = pathlib.Path(PATH_OUT_OCCLUSIONS)
 PATH_GRAPH = pathlib.Path(PATH_GRAPH)
 PATH_TRANSFORM = pathlib.Path(PATH_TRANSFORM)
 PATH_DIST_NODES = pathlib.Path(PATH_DIST_NODES)
 if not PATH_OUT.is_dir(): raise ValueError("PATH_OUT {} does not exist.".format(str(PATH_OUT)))
+if not PATH_OUT_UNIFORM.is_dir(): raise ValueError("PATH_OUT_UNIFORM {} does not exist.".format(str(PATH_OUT_UNIFORM)))
+if not PATH_OUT_OCCLUSIONS.is_dir(): raise ValueError("PATH_OUT_OCCLUSIONS {} does not exist.".format(str(PATH_OUT_OCCLUSIONS)))
 if not PATH_GRAPH.is_dir() and SAVE_GRAPH: raise ValueError("PATH_GRAPH {} does not exist.".format(str(PATH_GRAPH)))
 if not PATH_TRANSFORM.is_dir() and SAVE_TRANSFORM: raise ValueError("PATH_TRANSFORM {} does not exist.".format(str(PATH_TRANSFORM)))
 if not PATH_DIST_NODES.is_dir() and SAVE_DISTANCES: raise ValueError("PATH_DIST_NODES {} does not exist.".format(str(PATH_DIST_NODES)))
+
+if SAVE_PARAMETRES:
+    parametres = dict()
+    parametres['DRAWERS'] = DRAWERS
+    parametres['HEIGH'] = HEIGH
+    parametres['LENGHT'] = LENGHT
+    parametres['WIDTH'] = WIDTH
+    parametres['INNER_PATERNS'] = INNER_PATERNS
+    parametres['DIAG_PANEL'] = DIAG_PANEL
+    parametres['DENSITY'] = DENSITY
+    parametres['YAW'] = YAW
+    parametres['PITCH'] = PITCH
+    parametres['ROLL'] = ROLL
+    parametres['SEED'] = SEED
+    parametres['DECIMALS'] = DECIMALS
+    parametres['LIDAR_STEP_DEG'] = LIDAR_STEP_DEG
+    parametres['LIDAR_ANGLE_DEG'] = LIDAR_ANGLE_DEG
+    parametres['LIDAR_ANGLE_DEG_DECK'] = LIDAR_ANGLE_DEG_DECK
+    parametres['N_CAMERA_DECK'] = N_CAMERA_DECK
+    parametres['N_CAMERA_DOWN'] = N_CAMERA_DOWN
+    parametres['N_CAMERA_LAT'] = N_CAMERA_LAT
+    parametres['MIN_CAM'] = MIN_CAM
+    parametres['CAM_DIST_DECK'] = CAM_DIST_DECK
+    parametres['CAM_DIST_DOWN'] = CAM_DIST_DOWN
+    parametres['CAM_DIST_LAT_Y'] = CAM_DIST_LAT_Y
+    parametres['CAM_DIST_LAT_Z'] = CAM_DIST_LAT_Z
+    parametres['SIGMA'] = SIGMA
+
+    with open(str(PATH_OUT.joinpath('parametres.json')), 'w') as f:
+        my_json = json.dumps(parametres, indent=4)
+        f.write(my_json)
 
 # list profiles by type of beam
 profile_path = "standarized_profiles_formatted"
@@ -127,8 +166,12 @@ for i in range(N_POINT_CLOUDS):
     width = np.random.random() * (WIDTH[1] - WIDTH[0]) + WIDTH[0]
 
     # Deck
+    under_deck_elements = False
     if np.random.random() < 0.7:
-        deck_position = np.random.random()*height/2
+        deck_position = 0.5 + np.random.random()*height/2
+        under_deck_elements = True
+    elif np.random.random() < 0.5:
+        deck_position = 0
     else:
         deck_position = height
 
@@ -138,126 +181,58 @@ for i in range(N_POINT_CLOUDS):
     chords = [np.random.choice(profiles_chord), 0 + np.random.randint(0,4)*(np.pi/2), 1]
     diagonals_vert = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 else None
     parallels_vert = [np.random.choice(profiles_vert), np.random.randint(0,4)*(np.pi/2), 2]
-    diagonals_bottom = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 else None
+    diagonals_bottom = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if under_deck_elements and np.random.random() < 0.7 else None
     parallels_bottom = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2]
-    parallels_deck = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if deck_position!=height else None
+    parallels_deck = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if under_deck_elements else None
     diagonals_top = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 and deck_position!=height else None
     parallels_top = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2]
-    parallels_inner = [np.random.randint(np.clip(1,INNER_PATERNS[0], np.inf), INNER_PATERNS[1]), np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position>1 else None
     diagonals_inner = [np.random.choice(profiles_inner), np.random.randint(0,4)*(np.pi/2), 3] if (np.random.random() < 0.7 and deck_position>1) or parallels_inner is not None else None
+    if INNER_PATERNS[1] == 0:
+        parallels_inner = None
+    else:
+        parallels_inner = [np.random.randint(np.clip(1,INNER_PATERNS[0], np.inf), INNER_PATERNS[1]+1), np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if np.random.random() < 0.7 and deck_position>1 else None
 
     n_diag = np.random.randint(DIAG_PANEL[0], DIAG_PANEL[1]+1)
 
     #=================================================================================================================================================
     # Positions of the LIDAR. their are calcualted consider the point centre in (0,0,0).
-    # Number of cams
-    n_cameras_deck = np.random.randint(N_CAMARA_DECK[0], N_CAMARA_DECK[1]+1) if deck_position != height else 0
-    n_cameras_down = np.random.randint(N_CAMARA_DOWN[0], N_CAMARA_DOWN[1]+1)
-    n_cameras_lat_pos = np.random.randint(N_CAMARA_LAT[0], N_CAMARA_LAT[1]+1)
-    n_cameras_lat_neg = np.random.randint(N_CAMARA_LAT[0], N_CAMARA_LAT[1]+1)
-
-    while n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM:
-        if N_CAMARA_LAT[1] > n_cameras_lat_pos:
-            n_cameras_lat_pos = np.random.randint(n_cameras_lat_pos, N_CAMARA_LAT[1]+1) 
-        if not n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
-        if N_CAMARA_LAT[1] > n_cameras_lat_neg:
-            n_cameras_lat_neg = np.random.randint(n_cameras_lat_neg, N_CAMARA_LAT[1]+1) 
-        if not n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
-        if not N_CAMARA_DOWN[1] > n_cameras_down:
-            n_cameras_down = np.random.randint(n_cameras_down, N_CAMARA_DOWN[1]+1) 
-        if not n_cameras_deck+n_cameras_down+n_cameras_lat_pos+n_cameras_lat_neg < MIN_CAM: break
-        if N_CAMARA_DECK[1] > n_cameras_deck:
-            n_cameras_deck = np.random.randint(n_cameras_deck, N_CAMARA_DECK[1]+1) if deck_position != height else 0
-
-    # DECK. 4 cameras_deck por position to do 360.
-    angle = LIDAR_ANGLE_DEG_DECK/4
-    px = int(angle*LIDAR_STEP_DEG)
-    # Initialising
-    cameras_deck = np.zeros(n_cameras_deck*4, dtype='object')
-    for j in range(n_cameras_deck):
-        # Spacing the positions.
-        position = np.zeros(3)
-        position[0] = -length*n_drawers/2 + (j+1)/(n_cameras_deck+1)* length*n_drawers + np.random.normal(scale=SIGMA[0])
-        position[1] = 0 + np.random.normal(scale=SIGMA[1])
-        position[2] = -height/2+deck_position + np.random.random() * (CAM_DIST_DECK[1] - CAM_DIST_DECK[0]) + CAM_DIST_DECK[0]
-
-        # pointing +X and -X.
-        cameras_deck[j*4] = {'fov_deg': angle, 'center':position + [1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
-        cameras_deck[j*4+1] = {'fov_deg': angle, 'center':position + [-1,0,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
-
-        # pointing +Y and -Y
-        cameras_deck[j*4+2] = {'fov_deg': angle, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
-        cameras_deck[j*4+3] = {'fov_deg': angle, 'center':position + [0,-1,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
-
-    angle = LIDAR_ANGLE_DEG
-    px = int(angle*LIDAR_STEP_DEG)
-
-    #DOWN
-    # Initialising
-    cameras_down = np.zeros(n_cameras_down, dtype='object')
-    for j in range(n_cameras_down):
-        # Spacing the positions.
-        position = np.zeros(3)
-        position[0] = -length*n_drawers/2 + (j+1)/(n_cameras_down+1)* length*n_drawers + np.random.normal(scale=SIGMA[0])
-        position[1] = 0 + np.random.normal(scale=SIGMA[1])
-        position[2] = -height/2 + np.random.random() * (CAM_DIST_DOWN[1] - CAM_DIST_DOWN[0]) + CAM_DIST_DOWN[0]
-
-        # camera pointing +Z
-        cameras_down[j] = {'fov_deg': angle, 'center':position + [0,0,1], 'eye':position, 'up':[1,0,0], 'width_px':px, 'height_px':px}
-
-    #LATERAL +Y
-    # Initialising
-    cameras_lateral_pos = np.zeros(n_cameras_lat_pos, dtype='object')
-    for j in range(n_cameras_lat_pos):
-        # Spacing the positions.
-        position = np.zeros(3)
-        position[0] = -length*n_drawers/2 + (j+1)/(n_cameras_lat_pos+1)* length*n_drawers + np.random.normal(scale=SIGMA[0])
-        position[1] = width/2 + np.random.random() * (CAM_DIST_LAT_Y[1] - CAM_DIST_LAT_Y[0]) + CAM_DIST_LAT_Y[0]
-        position[2] = np.random.random() * (CAM_DIST_LAT_Z[1] - CAM_DIST_LAT_Z[0]) + CAM_DIST_LAT_Z[0]
-
-        # camera pointing -Y
-        cameras_lateral_pos[j] = {'fov_deg': angle, 'center':position + [0,-1,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
-
-    #LATERAL -Y
-    # Initialising
-    cameras_lateral_neg = np.zeros(n_cameras_lat_neg, dtype='object')
-    for j in range(n_cameras_lat_neg):
-        # Spacing the positions.
-        position = np.zeros(3)
-        position[0] = -length*n_drawers/2 + (j+1)/(n_cameras_lat_neg+1)* length*n_drawers + np.random.normal(scale=SIGMA[0])
-        position[1] = -width/2 - np.random.random() * (CAM_DIST_LAT_Y[1] - CAM_DIST_LAT_Y[0]) + CAM_DIST_LAT_Y[0]
-        position[2] = np.random.random() * (CAM_DIST_LAT_Z[1] - CAM_DIST_LAT_Z[0]) + CAM_DIST_LAT_Z[0]
-
-        # camera pointing +Y
-        cameras_lateral_neg[j] = {'fov_deg': angle, 'center':position + [0,1,0], 'eye':position, 'up':[0,0,1], 'width_px':px, 'height_px':px}
-
-    cameras = np.concatenate((cameras_deck, cameras_down, cameras_lateral_pos, cameras_lateral_neg))
+    cameras = camera_positions(N_CAMERA_DECK, N_CAMERA_DOWN, N_CAMERA_LAT, LIDAR_ANGLE_DEG, LIDAR_ANGLE_DEG_DECK, LIDAR_STEP_DEG, 
+                     CAM_DIST_DECK, CAM_DIST_DOWN, CAM_DIST_LAT_Y, CAM_DIST_LAT_Z, 
+                     MIN_CAM, deck_position, height, length, width, n_drawers, SIGMA)
 
     #=================================================================================================================================================
-    
-    if BRIDGE_TYPE == 'BaileyTruss':
-        my_bridge = BaileyTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
-                                diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
-                                diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom, parallel_deck = parallels_deck,
-                                diagonal_top=diagonals_top, parallel_top=parallels_top,
-                                diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
-                                centre=centre, orientation=orientation,
-                                density=DENSITY, cameras=cameras
-                                )
-    
-    elif BRIDGE_TYPE == 'BrownTruss':
-        my_bridge = BrownTruss(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
-                                diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
-                                diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom, parallel_deck = parallels_deck,
-                                diagonal_top=diagonals_top, parallel_top=parallels_top,
-                                diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
-                                centre=centre, orientation=orientation,
-                                n_diag=n_diag, density=DENSITY, cameras=cameras
-                                )
-        
+    # Typology
+    if i<N_POINT_CLOUDS/2:
+        BridgeType = BaileyTruss
     else:
-        raise TypeError('Bridge type not supported')
+        BridgeType = BrownTruss
+
+    # occlusions
+    my_bridge = BridgeType(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
+                            diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
+                            diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom, parallel_deck = parallels_deck,
+                            diagonal_top=diagonals_top, parallel_top=parallels_top,
+                            diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
+                            centre=centre, orientation=orientation,
+                            density=DENSITY, cameras=cameras
+                            )
+    file_name = pathlib.Path(my_bridge.name + "_" + str(i).zfill(N_DIGITS))
+    file_path = PATH_OUT_OCCLUSIONS.joinpath(file_name).with_suffix(FILE_TYPE)
+    my_bridge.save_las(path=file_path, scale=DECIMALS)
     
+    # non occlusions
+    my_bridge = BridgeType(n_drawers=n_drawers, height=height, length=length, width=width, h_deck=h_deck, chord=chords, 
+                            diagonal_vert=diagonals_vert, parallel_vert=parallels_vert,
+                            diagonal_bottom=diagonals_bottom, parallel_bottom=parallels_bottom, parallel_deck = parallels_deck,
+                            diagonal_top=diagonals_top, parallel_top=parallels_top,
+                            diagonal_inner=diagonals_inner, parallel_inner=parallels_inner,
+                            centre=centre, orientation=orientation,
+                            density=DENSITY
+                            )
+    file_name = pathlib.Path(my_bridge.name + "_" + str(i).zfill(N_DIGITS))
+    file_path = PATH_OUT_UNIFORM.joinpath(file_name).with_suffix(FILE_TYPE)
+    my_bridge.save_las(path=file_path, scale=DECIMALS)
+
     # my_bridge.show_pc()
 
     # Visualization
@@ -268,11 +243,6 @@ for i in range(N_POINT_CLOUDS):
     # coordinates = o3d.geometry.TriangleMesh.create_coordinate_frame()
     # point_cloud = my_bridge.point_cloud()
     # o3d.visualization.draw_geometries([point_cloud, coordinates])
-
-    file_name = pathlib.Path(my_bridge.name + "_" + str(i).zfill(N_DIGITS))
-
-    file_path = PATH_OUT.joinpath(file_name).with_suffix(FILE_TYPE)
-    my_bridge.save_las(path=file_path, scale=DECIMALS, distance_nodes=DISTANCE_NODES)
 
     # Save transformation matrix
     if SAVE_TRANSFORM:

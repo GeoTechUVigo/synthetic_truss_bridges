@@ -187,6 +187,8 @@ class BrownTruss(TrussBridge):
 
         ## Parallel
         if not isinstance(parallel_bottom, type(None)):
+            if h_deck == 0:
+                n_beam_deck = len(beam_nodes)
 
             # First and last point of each parallel
             n_beams = n_drawers + 1
@@ -202,6 +204,8 @@ class BrownTruss(TrussBridge):
 
         ## Parallel just below the deck
         if parallel_deck is not None:
+            n_beam_deck = len(beam_nodes)
+
             # First and last point of each parallel
             n_beams = n_drawers + 1
             beam_p0 = np.concatenate(((np.arange(n_beams) * length).reshape(-1,1),
@@ -249,6 +253,8 @@ class BrownTruss(TrussBridge):
 
         ## Parallel
         if not isinstance(parallel_top, type(None)):
+            if h_deck == height:
+                n_beam_deck = len(beam_nodes)
 
             # First and last point of each parallel
             n_beams = n_drawers + 1
@@ -345,7 +351,7 @@ class BrownTruss(TrussBridge):
         node_coordinates = node_coordinates - [n_drawers*length/2, width/2, height/2]
         deck_points = deck_points - [n_drawers*length/2, width/2, height/2]
 
-        deck = [deck_points[0], deck_points[1], [width, h_deck[1]]]
+        deck = [deck_points[0], deck_points[1], [width, h_deck[1]], n_beam_deck]
 
         # TrussBridge constructor with the elements of BaileyTrusss
         super().__init__(node_coordinates, beam_nodes, beam_sect, beam_orient, beam_sem, deck, centre, orientation, density, cameras)

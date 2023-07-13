@@ -55,6 +55,9 @@ class TrussBridge(object):
         # Then, they are place. It is done to avoid rotation problems.
         self.graph = Graph.graph_from_structural_model(node_coordinates[nodes])
         self.beam_setter()
+        # Raise the board so that it does not cover the beams.
+        deck[0][2] = np.asarray(self.beam[deck[3]].mesh.vertices)[:,-1].max() + deck[2][1]/2
+        deck[1][2] = np.asarray(self.beam[deck[3]].mesh.vertices)[:,-1].max() + deck[2][1]/2
         self.deck = Beam(deck[0], deck[1], ["deck", deck[2][0], deck[2][1]], 0)
 
         self.centre = centre
@@ -486,7 +489,7 @@ class TrussBridge(object):
             
             pcd = o3d.geometry.PointCloud()
             if np.any(np.in1d(unique_idxs, idx)):
-                pcd.points = o3d.cuda.pybind.utility.Vector3dVector(points_total[idx_member_total == idx])
+                pcd.points = o3d.pybind.utility.Vector3dVector(points_total[idx_member_total == idx])
 
             # idx 0 is the deck.
             if idx == 0:
