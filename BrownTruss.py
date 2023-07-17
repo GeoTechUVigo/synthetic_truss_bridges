@@ -56,6 +56,7 @@ class BrownTruss(TrussBridge):
         :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px']. Consider the point centre in (0,0,0)
         """
 
+        n_beam_deck = None
         #############################################################################################
         # Chords
         #############################################################################################
@@ -187,7 +188,7 @@ class BrownTruss(TrussBridge):
 
         ## Parallel
         if not isinstance(parallel_bottom, type(None)):
-            if h_deck == 0:
+            if h_deck[0] == 0:
                 n_beam_deck = len(beam_nodes)
 
             # First and last point of each parallel
@@ -253,7 +254,7 @@ class BrownTruss(TrussBridge):
 
         ## Parallel
         if not isinstance(parallel_top, type(None)):
-            if h_deck == height:
+            if h_deck[0] == height:
                 n_beam_deck = len(beam_nodes)
 
             # First and last point of each parallel

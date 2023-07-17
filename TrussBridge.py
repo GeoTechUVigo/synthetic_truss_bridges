@@ -56,8 +56,10 @@ class TrussBridge(object):
         self.graph = Graph.graph_from_structural_model(node_coordinates[nodes])
         self.beam_setter()
         # Raise the board so that it does not cover the beams.
-        deck[0][2] = np.asarray(self.beam[deck[3]].mesh.vertices)[:,-1].max() + deck[2][1]/2
-        deck[1][2] = np.asarray(self.beam[deck[3]].mesh.vertices)[:,-1].max() + deck[2][1]/2
+        if deck[3] is not None:
+            deck[0][2] = np.asarray(self.beam[deck[3]].mesh.vertices)[:,-1].max() + deck[2][1]/2
+            deck[1][2] = np.asarray(self.beam[deck[3]].mesh.vertices)[:,-1].max() + deck[2][1]/2
+
         self.deck = Beam(deck[0], deck[1], ["deck", deck[2][0], deck[2][1]], 0)
 
         self.centre = centre

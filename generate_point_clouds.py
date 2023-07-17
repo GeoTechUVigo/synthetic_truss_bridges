@@ -33,7 +33,7 @@ from camera_positions import camera_positions
 # ============================================================================
 
 # Parameters
-FILE_TYPE = ".laz"
+FILE_TYPE = ".las"
 PATH_OUT='data'
 PATH_OUT_UNIFORM = "data/uniform"
 PATH_OUT_OCCLUSIONS = "data/occlusions"
@@ -47,7 +47,7 @@ SAVE_TRANSFORM = None
 SAVE_DISTANCES = None
 
 # TRUSS PARAMETERS
-N_POINT_CLOUDS = 100
+N_POINT_CLOUDS = 250
 DRAWERS = [4,10]
 HEIGH = [3,5]
 LENGHT = [3,5]
@@ -84,6 +84,12 @@ CAM_DIST_LAT_Y = [3, 10] # distance to the lateral face in Y. Both sides
 CAM_DIST_LAT_Z = [2, -10] # distance to the centre in Z
 SIGMA = [1.0, 0.2, 0] # Standar deviation in XYZ. Used in the dimensions in which there are not random choice
 
+# SECTIONS
+CHORD = {'profile': ['IPN','UB', 'UBP', 'UC', 'U', 'UPE', 'UPN', 'CH', 'HD', 'HL', 'HLZ', 'HP'], 'min': 300, 'max': np.inf}
+VERT = {'profile': ['IPN', 'HD', 'HL', 'HLZ', 'HP'], 'min': 200, 'max': 300}
+PARALLEL = {'profile':['IPN', 'L'], 'min': 200, 'max': 300}
+DIAGONALS = {'profile':['IPN', 'L', 'HD', 'HL', 'HLZ', 'HP'],  'min': 0, 'max': 200}
+INNER = {'profile':['L'],  'min': 0, 'max': 200}
 # ============================================================================
 np.random.seed(SEED)
 
@@ -126,6 +132,11 @@ if SAVE_PARAMETRES:
     parametres['CAM_DIST_LAT_Y'] = CAM_DIST_LAT_Y
     parametres['CAM_DIST_LAT_Z'] = CAM_DIST_LAT_Z
     parametres['SIGMA'] = SIGMA
+    parametres['CHORD'] = CHORD
+    parametres['VERT'] = VERT
+    parametres['PARALLEL'] = PARALLEL
+    parametres['DIAGONALS'] = DIAGONALS
+    parametres['INNER'] = INNER
 
     with open(str(PATH_OUT.joinpath('parametres.json')), 'w') as f:
         my_json = json.dumps(parametres, indent=4)
@@ -147,11 +158,11 @@ for type in np.char.split(profiles_names,('-')):
     profile_dim = np.append(profile_dim, int(type[1].split('x')[0]))
 
 # list profiles by type of beam
-profiles_chord = profiles_names[np.logical_and(np.in1d(profile_type, ['IPN','UB', 'UBP', 'UC', 'U', 'UPE', 'UPN', 'CH', 'HD', 'HL', 'HLZ', 'HP']), profile_dim >= 300)]
-profiles_vert = profiles_names[np.logical_and(np.in1d(profile_type, ['IPN', 'HD', 'HL', 'HLZ', 'HP']), np.logical_and(profile_dim >= 200, profile_dim <= 300))]
-profiles_parallel = profiles_names[np.logical_and(np.in1d(profile_type, ['IPN', 'L']), np.logical_and(profile_dim >= 200, profile_dim <= 300))]
-profiles_diagonals = profiles_names[np.logical_and(np.in1d(profile_type, ['IPN', 'L', 'HD', 'HL', 'HLZ', 'HP']), profile_dim <= 200)]
-profiles_inner = profiles_names[np.logical_and(np.in1d(profile_type, ['L']), profile_dim <= 200)]
+profiles_chord = profiles_names[np.logical_and(np.in1d(profile_type, CHORD['profile']), np.logical_and(profile_dim >= CHORD['min'], profile_dim <= CHORD['max']))]
+profiles_vert = profiles_names[np.logical_and(np.in1d(profile_type, VERT['profile']), np.logical_and(profile_dim >= VERT['min'], profile_dim <= VERT['max']))]
+profiles_parallel = profiles_names[np.logical_and(np.in1d(profile_type, PARALLEL['profile']), np.logical_and(profile_dim >= PARALLEL['min'], profile_dim <= PARALLEL['max']))]
+profiles_diagonals = profiles_names[np.logical_and(np.in1d(profile_type, DIAGONALS['profile']), np.logical_and(profile_dim >= DIAGONALS['min'], profile_dim <= DIAGONALS['max']))]
+profiles_inner = profiles_names[np.logical_and(np.in1d(profile_type, INNER['profile']), np.logical_and(profile_dim >= INNER['min'], profile_dim <= INNER['max']))]
 
 for i in range(N_POINT_CLOUDS):
 
@@ -183,7 +194,7 @@ for i in range(N_POINT_CLOUDS):
     parallels_vert = [np.random.choice(profiles_vert), np.random.randint(0,4)*(np.pi/2), 2]
     diagonals_bottom = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if under_deck_elements and np.random.random() < 0.7 else None
     parallels_bottom = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2]
-    parallels_deck = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if under_deck_elements else None
+    parallels_deck = None #[np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2] if under_deck_elements else None
     diagonals_top = [np.random.choice(profiles_diagonals), np.random.randint(0,4)*(np.pi/2), 3] if np.random.random() < 0.7 and deck_position!=height else None
     parallels_top = [np.random.choice(profiles_parallel), np.random.randint(0,4)*(np.pi/2), 2]
     diagonals_inner = [np.random.choice(profiles_inner), np.random.randint(0,4)*(np.pi/2), 3] if (np.random.random() < 0.7 and deck_position>1) or parallels_inner is not None else None

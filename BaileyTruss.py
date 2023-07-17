@@ -54,7 +54,7 @@ class BaileyTruss(TrussBridge):
         :param density: density of the point cloud (points/m²).
         :param cameras: list of dicts with the following keys for each LiDAR position: ['fov_deg', 'center', 'eye', 'up', 'width_px', 'height_px']. Consider the point centre in (0,0,0)
         """
-
+        n_beam_deck = None
         #############################################################################################
         # Chords
         #############################################################################################
@@ -189,7 +189,7 @@ class BaileyTruss(TrussBridge):
         if isinstance(parallel_bottom, type(None)):
             parallel_bottom = None
         else:
-            if h_deck == 0:
+            if h_deck[0] == 0:
                 n_beam_deck = len(beam_nodes)
 
             # First and last point of each parallel
@@ -260,7 +260,7 @@ class BaileyTruss(TrussBridge):
         if isinstance(parallel_top, type(None)):
             parallel_top = None
         else:
-            if h_deck == height:
+            if h_deck[0] == height:
                 n_beam_deck = len(beam_nodes)
 
             # First and last point of each parallel
